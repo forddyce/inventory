@@ -1,0 +1,2 @@
+<?php
+namespace App\Http\Controllers; use Illuminate\Http\Request; use App\Repositories\SampleRepository; class SampleController extends Controller { protected $SampleRepository; public function __construct(SampleRepository $spc4f0fe) { $this->SampleRepository = $spc4f0fe; } }

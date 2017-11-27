@@ -1,0 +1,16 @@
+{
+  "extends": [ "eslint:recommended" ],
+  "env": {
+    "jasmine": true
+  },
+  "globals": {
+    "$": true
+  },
+  "parserOptions": {
+    ecmaVersion: 6,
+    ecmaFeatures: {
+      jsx: true,
+    },
+    sourceType: "module"
+  },
+}
