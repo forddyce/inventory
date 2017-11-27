@@ -1,2 +1,62 @@
 <?php
-namespace App\Repositories; use App\Models\Supplier; use Yajra\DataTables\Facades\DataTables; class SupplierRepository extends BaseRepository { protected $model; public function __construct() { $this->model = new Supplier(); } protected function saveModel($sp12db67, $sp68be9c) { foreach ($sp68be9c as $sp22c61b => $sp75a6c8) { $sp12db67->{$sp22c61b} = $sp75a6c8; } $sp12db67->save(); return $sp12db67; } public function store($sp68be9c) { $sp12db67 = $this->saveModel(new $this->model(), $sp68be9c); return $sp12db67; } public function update($sp12db67, $sp68be9c) { $sp12db67 = $this->saveModel($sp12db67, $sp68be9c); return $sp12db67; } public function findAll() { return $this->model->orderBy('supplier_name', 'asc')->get(); } public function findById($sp2bf607) { return $this->model->where('id', $sp2bf607)->first(); } public function getList($spe81ede = '', $sp0757f9 = '') { if ($spe81ede == '' && $sp0757f9 == '') { $spe88479 = $this->model->query(); } else { $spe88479 = $this->model; if ($spe81ede != '') { $spe88479 = $spe88479->whereDate('created_at', '>=', trim($spe81ede)); } if ($sp0757f9 != '') { $spe88479 = $spe88479->whereDate('created_at', '<=', trim($sp0757f9)); } } $sp68be9c = DataTables::eloquent($spe88479)->addColumn('action', function ($sp12db67) { return view('supplier.action')->with('model', $sp12db67); })->make(true); return $sp68be9c; } }
+
+namespace App\Repositories;
+
+use App\Models\Supplier;
+use Yajra\DataTables\Facades\DataTables;
+
+class SupplierRepository extends BaseRepository
+{
+    protected $model;
+
+    public function __construct() {
+        $this->model = new Supplier;
+    }
+
+    protected function saveModel($model, $data) {
+        foreach ($data as $k=>$d) {
+            $model->{$k} = $d;
+        }
+        $model->save();
+        return $model;
+    }
+
+    public function store($data) {
+        $model = $this->saveModel(new $this->model, $data);
+        return $model;
+    }
+
+    public function update($model, $data) {
+        $model = $this->saveModel($model, $data);
+        return $model;
+    }
+
+    public function findAll () {
+        return $this->model->orderBy('supplier_name', 'asc')->get();
+    }
+
+    public function findById ($id) {
+        return $this->model->where('id', $id)->first();
+    }
+
+    public function getList ($from='', $to='') {
+        if ($from == '' && $to == '') {
+            $query = $this->model->query();
+        } else {
+            $query = $this->model;
+            if ($from != '') {
+                $query = $query->whereDate('created_at', '>=', trim($from));
+            }
+            if ($to != '') {
+                $query = $query->whereDate('created_at', '<=', trim($to));
+            }
+        }
+        $data = DataTables::eloquent($query)
+                ->addColumn('action', function ($model) {
+                    return view('supplier.action')->with('model', $model);
+                })
+                ->make(true);
+        return $data;
+    }
+
+}

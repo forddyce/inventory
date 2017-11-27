@@ -1,2 +1,12 @@
 <?php
-namespace App\Models; use Illuminate\Database\Eloquent\Model; class Expense extends Model { protected $table = 'Expense'; protected $fillable = array(); protected $hidden = array(); }
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Expense extends Model
+{
+    protected $table = 'Expense';
+    protected $fillable = [];
+    protected $hidden = [];
+}

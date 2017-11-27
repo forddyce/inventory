@@ -1,2 +1,169 @@
 <?php
-namespace App\Repositories; use App\Models\Item; use App\Models\ItemSalesHistory; use App\Models\ItemPurchaseHistory; use Yajra\DataTables\Facades\DataTables; class ItemRepository extends BaseRepository { protected $model, $salesModel, $purchaseModel; public function __construct() { $this->model = new Item(); $this->salesModel = new ItemSalesHistory(); $this->purchaseModel = new ItemPurchaseHistory(); } protected function saveModel($sp12db67, $sp68be9c) { foreach ($sp68be9c as $sp22c61b => $sp75a6c8) { $sp12db67->{$sp22c61b} = $sp75a6c8; } $sp12db67->save(); return $sp12db67; } public function store($sp68be9c) { $sp12db67 = $this->saveModel(new $this->model(), $sp68be9c); return $sp12db67; } public function update($sp12db67, $sp68be9c) { $sp12db67 = $this->saveModel($sp12db67, $sp68be9c); return $sp12db67; } public function findById($sp2bf607) { return $this->model->where('id', $sp2bf607)->first(); } public function findByCode($sp2cc1d5) { return $this->model->where('item_code', $sp2cc1d5)->first(); } public function findAll() { return $this->model->orderBy('item_name', 'asc')->get(); } public function findReportPurchase($spe1dc49, $sp32ff68, $spaa89da) { $sp12db67 = $this->purchaseModel; if (!is_null($spaa89da)) { $sp12db67 = $sp12db67->where('item_id', $spaa89da->id); } $sp12db67 = $sp12db67->whereMonth('created_at', $spe1dc49)->whereYear('created_at', $sp32ff68)->get(); return $sp12db67; } public function findReportSales($spe1dc49, $sp32ff68, $spaa89da) { $sp12db67 = $this->salesModel; if (!is_null($spaa89da)) { $sp12db67 = $sp12db67->where('item_id', $spaa89da->id); } $sp12db67 = $sp12db67->whereMonth('created_at', $spe1dc49)->whereYear('created_at', $sp32ff68)->get(); return $sp12db67; } public function checkCode($sp2cc1d5, $spe374d9 = null) { $sp12db67 = $this->model->where('item_code', $sp2cc1d5); if (!is_null($spe374d9)) { $sp12db67 = $sp12db67->where('id', '!=', $spe374d9); } return !$sp12db67->first(); } public function getList($spe81ede = '', $sp0757f9 = '') { if ($spe81ede == '' && $sp0757f9 == '') { $spe88479 = $this->model->query(); } else { $spe88479 = $this->model; if ($spe81ede != '') { $spe88479 = $spe88479->whereDate('created_at', '>=', trim($spe81ede)); } if ($sp0757f9 != '') { $spe88479 = $spe88479->whereDate('created_at', '<=', trim($sp0757f9)); } } $sp68be9c = DataTables::eloquent($spe88479)->addColumn('action', function ($sp12db67) { return view('item.action')->with('model', $sp12db67); })->make(true); return $sp68be9c; } public function addPurchaseHistory($sp68be9c, $sp1c4881, $sp9049a6) { $sp12db67 = new $this->purchaseModel(); $sp12db67->item_id = $sp1c4881->id; $sp12db67->purchase_id = $sp9049a6->id; $sp12db67->invoice_id = $sp9049a6->invoice_id; $sp12db67->quantity = $sp68be9c['quantity']; $sp12db67->unit_price = $sp68be9c['price']; $sp12db67->price = $sp68be9c['price'] * $sp68be9c['quantity']; $sp12db67->discount = $sp68be9c['discount']; $sp12db67->total = $sp68be9c['total']; $sp12db67->save(); return $sp12db67; } public function addSalesHistory($sp68be9c, $sp1c4881, $sp4f5893) { $sp12db67 = new $this->salesModel(); $sp12db67->item_id = $sp1c4881->id; $sp12db67->sales_id = $sp4f5893->id; $sp12db67->invoice_id = $sp4f5893->invoice_id; $sp12db67->quantity = $sp68be9c['quantity']; $sp12db67->unit_price = $sp68be9c['price']; $sp12db67->price = $sp68be9c['price'] * $sp68be9c['quantity']; $sp12db67->discount = $sp68be9c['discount']; $sp12db67->total = $sp68be9c['total']; $sp12db67->save(); return $sp12db67; } }
+
+namespace App\Repositories;
+
+use App\Models\Item;
+use App\Models\ItemSalesHistory;
+use App\Models\ItemPurchaseHistory;
+
+use Yajra\DataTables\Facades\DataTables;
+
+class ItemRepository extends BaseRepository
+{
+    protected $model, $salesModel, $purchaseModel;
+
+    public function __construct() {
+        $this->model = new Item;
+        $this->salesModel = new ItemSalesHistory;
+        $this->purchaseModel = new ItemPurchaseHistory;
+    }
+
+    protected function saveModel($model, $data) {
+        foreach ($data as $k=>$d) {
+            $model->{$k} = $d;
+        }
+        $model->save();
+        return $model;
+    }
+
+    public function store($data) {
+        $model = $this->saveModel(new $this->model, $data);
+        return $model;
+    }
+
+    public function update($model, $data) {
+        $model = $this->saveModel($model, $data);
+        return $model;
+    }
+
+    public function findById ($id) {
+        return $this->model->where('id', $id)->first();
+    }
+
+    public function findByCode ($code) {
+        return $this->model->where('item_code', $code)->first();
+    }
+
+    public function findAll () {
+        return $this->model->orderBy('item_name', 'asc')->get();
+    }
+
+    /**
+     * [findReportPurchase description]
+     * @param integer $month
+     * @param integer $year
+     * @param App\Models\Item $item
+     * @return json
+     */
+    public function findReportPurchase ($month, $year, $item) {
+        $model = $this->purchaseModel;
+
+        if (!is_null($item)) {
+            $model = $model->where('item_id', $item->id);
+        }
+                    
+        $model = $model->whereMonth('created_at', $month)
+                    ->whereYear('created_at', $year)
+                    ->get();
+
+        return $model;
+    }
+
+     /**
+     * [findReportPurchase description]
+     * @param integer $month
+     * @param integer $year
+     * @param App\Models\Item $item
+     * @return json
+     */
+    public function findReportSales ($month, $year, $item) {
+        $model = $this->salesModel;
+
+        if (!is_null($item)) {
+            $model = $model->where('item_id', $item->id);
+        }
+                    
+        $model = $model->whereMonth('created_at', $month)
+                    ->whereYear('created_at', $year)
+                    ->get();
+
+        return $model;
+    }
+
+    /**
+     * Check if unique code exists
+     * @param string $code
+     * @param integer $idToIgnore
+     * @return boolean
+     */
+    public function checkCode ($code, $idToIgnore=null) {
+        $model = $this->model->where('item_code', $code);
+        if (!is_null($idToIgnore)) {
+            $model = $model->where('id', '!=', $idToIgnore);
+        }
+        return !$model->first();
+    }
+
+    public function getList ($from='', $to='') {
+        if ($from == '' && $to == '') {
+            $query = $this->model->query();
+        } else {
+            $query = $this->model;
+            if ($from != '') {
+                $query = $query->whereDate('created_at', '>=', trim($from));
+            }
+            if ($to != '') {
+                $query = $query->whereDate('created_at', '<=', trim($to));
+            }
+        }
+        $data = DataTables::eloquent($query)
+                ->addColumn('action', function ($model) {
+                    return view('item.action')->with('model', $model);
+                })
+                ->make(true);
+        return $data;
+    }
+
+    /**
+     * [addPurchaseHistory description]
+     * @param array $data
+     * @param App\Models\Item $itemModel
+     * @param App\Models\Purchase $purchaseModel
+     * @return App\Models\ItemPurchaseHistory
+     */
+    public function addPurchaseHistory ($data, $itemModel, $purchaseModel) {
+        $model = new $this->purchaseModel;
+        $model->item_id = $itemModel->id;
+        $model->purchase_id = $purchaseModel->id;
+        $model->invoice_id = $purchaseModel->invoice_id;
+        $model->quantity = $data['quantity'];
+        $model->unit_price = $data['price'];
+        $model->price = $data['price'] * $data['quantity'];
+        $model->discount = $data['discount'];
+        $model->total = $data['total'];
+        $model->save();
+        return $model;
+    }
+
+    /**
+     * [addSalesHistory description]
+     * @param array $data
+     * @param App\Models\Item $itemModel
+     * @param App\Models\Sales $salesModel
+     * @return App\Models\ItemSalesHistory
+     */
+    public function addSalesHistory ($data, $itemModel, $salesModel) {
+        $model = new $this->salesModel;
+        $model->item_id = $itemModel->id;
+        $model->sales_id = $salesModel->id;
+        $model->invoice_id = $salesModel->invoice_id;
+        $model->quantity = $data['quantity'];
+        $model->unit_price = $data['price'];
+        $model->price = $data['price'] * $data['quantity'];
+        $model->discount = $data['discount'];
+        $model->total = $data['total'];
+        $model->save();
+        return $model;
+    }
+
+}

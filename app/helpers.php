@@ -1,2 +1,45 @@
 <?php
-if (!function_exists('classActivePath')) { function classActivePath($spc48ff6) { return Request::is($spc48ff6) ? ' class="active"' : ''; } } if (!function_exists('classActiveSegment')) { function classActiveSegment($sp3edd5e, $sp6478e7) { if (!is_array($sp6478e7)) { return Request::segment($sp3edd5e) == $sp6478e7 ? ' class="active"' : ''; } foreach ($sp6478e7 as $spd436f2) { if (Request::segment($sp3edd5e) == $spd436f2) { return ' class="active"'; } } return ''; } } if (!function_exists('classActiveOnlyPath')) { function classActiveOnlyPath($spc48ff6) { return Request::is($spc48ff6) ? ' active' : ''; } } if (!function_exists('classActiveOnlySegment')) { function classActiveOnlySegment($sp3edd5e, $sp6478e7) { if (!is_array($sp6478e7)) { return Request::segment($sp3edd5e) == $sp6478e7 ? ' active' : ''; } foreach ($sp6478e7 as $spd436f2) { if (Request::segment($sp3edd5e) == $spd436f2) { return ' active'; } } return ''; } }
+
+if ( ! function_exists('classActivePath') ) {
+	function classActivePath($path)
+	{
+		return Request::is($path) ? ' class="active"' : '';
+	}
+}
+
+if ( ! function_exists('classActiveSegment') ) {
+	function classActiveSegment($segment, $value)
+	{
+		if (!is_array($value)) {
+			return Request::segment($segment) == $value ? ' class="active"' : '';
+		}
+		foreach ($value as $v) {
+			if (Request::segment($segment) == $v) {
+				return ' class="active"';
+			}
+		}
+		return '';
+	}
+}
+
+if ( ! function_exists('classActiveOnlyPath') ) {
+	function classActiveOnlyPath($path)
+	{
+		return Request::is($path) ? ' active' : '';
+	}
+}
+
+if ( ! function_exists('classActiveOnlySegment') ) {
+	function classActiveOnlySegment($segment, $value)
+	{
+		if (!is_array($value)) {
+			return Request::segment($segment) == $value ? ' active' : '';
+		}
+		foreach ($value as $v) {
+			if (Request::segment($segment) == $v) {
+				return ' active';
+			}
+		}
+		return '';
+	}
+}

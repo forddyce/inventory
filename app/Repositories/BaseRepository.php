@@ -1,2 +1,7 @@
 <?php
-namespace App\Repositories; class BaseRepository { }
+
+namespace App\Repositories;
+
+class BaseRepository
+{
+}

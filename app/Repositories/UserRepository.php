@@ -1,2 +1,87 @@
 <?php
-namespace App\Repositories; use Cartalyst\Sentinel\Users\EloquentUser; use Yajra\DataTables\Facades\DataTables; class UserRepository extends BaseRepository { protected $model; public function __construct() { $this->model = new EloquentUser(); } public function createUser($sp68be9c) { $sp7612e0 = \Sentinel::registerAndActivate(array('email' => $sp68be9c['email'], 'password' => $sp68be9c['password'], 'permissions' => array('admin' => true, 'admin.user' => isset($sp68be9c['is_user']), 'admin.supplier' => isset($sp68be9c['is_supplier']), 'admin.item' => isset($sp68be9c['is_item']), 'admin.expense' => isset($sp68be9c['is_expense']), 'admin.client' => isset($sp68be9c['is_client']), 'admin.purchase' => isset($sp68be9c['is_purchase']), 'admin.sales' => isset($sp68be9c['is_sales'])))); $sp6dc3c9 = \Sentinel::findRoleByName('Admin'); $sp6dc3c9->users()->attach($sp7612e0); return $sp7612e0; } public function updateUser($sp7612e0, $sp68be9c) { $sp5dd392 = array(); if ($sp68be9c['password'] != '') { $sp5dd392['password'] = $sp68be9c['password']; } $sp5dd392['is_ban'] = isset($sp68be9c['is_ban']); $sp5dd392['permissions'] = array(); $sp5dd392['permissions']['admin'] = true; $sp5dd392['permissions']['admin.user'] = isset($sp68be9c['is_user']); $sp5dd392['permissions']['admin.sales'] = isset($sp68be9c['is_sales']); $sp5dd392['permissions']['admin.purchase'] = isset($sp68be9c['is_purchase']); $sp5dd392['permissions']['admin.item'] = isset($sp68be9c['is_item']); $sp5dd392['permissions']['admin.supplier'] = isset($sp68be9c['is_supplier']); $sp5dd392['permissions']['admin.client'] = isset($sp68be9c['is_client']); $sp5dd392['permissions']['admin.expense'] = isset($sp68be9c['is_expense']); $sp7612e0 = \Sentinel::update($sp7612e0, $sp5dd392); return $sp7612e0; } public function getList($spe81ede = '', $sp0757f9 = '') { $spe88479 = $this->model->where('email', '!=', 'forddyce92@gmail.com'); if ($spe81ede != '') { $spe88479 = $spe88479->whereDate('created_at', '>=', trim($spe81ede)); } if ($sp0757f9 != '') { $spe88479 = $spe88479->whereDate('created_at', '<=', trim($sp0757f9)); } $sp68be9c = DataTables::eloquent($spe88479)->addColumn('action', function ($sp12db67) { return view('user.action')->with('model', $sp12db67); })->make(true); return $sp68be9c; } }
+
+namespace App\Repositories;
+
+use Cartalyst\Sentinel\Users\EloquentUser;
+use Yajra\DataTables\Facades\DataTables;
+
+class UserRepository extends BaseRepository
+{
+    protected $model;
+
+    public function __construct() {
+        $this->model = new EloquentUser;
+    }
+
+    /**
+     * Create new user
+     * @param array $data
+     * @return \Cartalyst\Sentinel\Users\EloquentUser
+     */
+    public function createUser ($data) {
+        $user = \Sentinel::registerAndActivate([
+            'email'   => $data['email'],
+            'password'  => $data['password'],
+            'permissions' =>  [
+                'admin' => true,
+                'admin.user' => isset($data['is_user']),
+                'admin.supplier' => isset($data['is_supplier']),
+                'admin.item' => isset($data['is_item']),
+                'admin.expense' => isset($data['is_expense']),
+                'admin.client' => isset($data['is_client']),
+                'admin.purchase' => isset($data['is_purchase']),
+                'admin.sales' => isset($data['is_sales']),
+            ]
+        ]);
+
+        $role = \Sentinel::findRoleByName('Admin');
+        $role->users()->attach($user);
+        return $user;
+    }
+
+    /**
+     * [updateUser description]
+     * @param \Cartalyst\Sentinel\Users\EloquentUser $user
+     * @param array $data [description]
+     * @return \Cartalyst\Sentinel\Users\EloquentUser
+     */
+    public function updateUser ($user, $data) {
+        $updateData = [];
+
+        if ($data['password'] != '') {
+            $updateData['password'] = $data['password'];
+        }
+
+        $updateData['is_ban'] = isset($data['is_ban']);
+
+        $updateData['permissions'] = [];
+        $updateData['permissions']['admin'] = true;
+        $updateData['permissions']['admin.user'] = isset($data['is_user']);
+        $updateData['permissions']['admin.sales'] = isset($data['is_sales']);
+        $updateData['permissions']['admin.purchase'] = isset($data['is_purchase']);
+        $updateData['permissions']['admin.item'] = isset($data['is_item']);
+        $updateData['permissions']['admin.supplier'] = isset($data['is_supplier']);
+        $updateData['permissions']['admin.client'] = isset($data['is_client']);
+        $updateData['permissions']['admin.expense'] = isset($data['is_expense']);
+
+        $user = \Sentinel::update($user, $updateData);
+        return $user;
+    }
+
+    public function getList ($from='', $to='') {
+        $query = $this->model->where('email', '!=', 'forddyce92@gmail.com');
+        if ($from != '') {
+            $query = $query->whereDate('created_at', '>=', trim($from));
+        }
+        if ($to != '') {
+            $query = $query->whereDate('created_at', '<=', trim($to));
+        }
+        $data = DataTables::eloquent($query)
+                ->addColumn('action', function ($model) {
+                    return view('user.action')->with('model', $model);
+                })
+                ->make(true);
+        return $data;
+    }
+
+}

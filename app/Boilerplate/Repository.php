@@ -1,2 +1,37 @@
 <?php
-namespace App\Repositories; use App\Models\Sample; class SampleRepository extends BaseRepository { protected $model; public function __construct() { $this->model = new Sample(); } protected function saveModel($sp12db67, $sp68be9c) { foreach ($sp68be9c as $sp22c61b => $sp75a6c8) { $sp12db67->{$sp22c61b} = $sp75a6c8; } $sp12db67->save(); return $sp12db67; } public function store($sp68be9c) { $sp12db67 = $this->saveModel(new $this->model(), $sp68be9c); return $sp12db67; } public function update($sp12db67, $sp68be9c) { $sp12db67 = $this->saveModel($sp12db67, $sp68be9c); return $sp12db67; } public function findById($sp2bf607) { return $this->model->where('id', $sp2bf607)->first(); } }
+
+namespace App\Repositories;
+
+use App\Models\Sample;
+
+class SampleRepository extends BaseRepository
+{
+    protected $model;
+
+    public function __construct() {
+        $this->model = new Sample;
+    }
+
+    protected function saveModel($model, $data) {
+        foreach ($data as $k=>$d) {
+            $model->{$k} = $d;
+        }
+        $model->save();
+        return $model;
+    }
+
+    public function store($data) {
+        $model = $this->saveModel(new $this->model, $data);
+        return $model;
+    }
+
+    public function update($model, $data) {
+        $model = $this->saveModel($model, $data);
+        return $model;
+    }
+
+    public function findById ($id) {
+        return $this->model->where('id', $id)->first();
+    }
+
+}

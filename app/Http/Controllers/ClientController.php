@@ -1,2 +1,293 @@
 <?php
-namespace App\Http\Controllers; use Illuminate\Http\Request; use App\Repositories\ClientRepository; class ClientController extends Controller { protected $ClientRepository; public function __construct(ClientRepository $spc27a50) { parent::__construct(); $this->ClientRepository = $spc27a50; $this->middleware('admin'); $this->middleware('admin.client'); } public function getClientList() { return $this->ClientRepository->getClientList(\Input::get('date_start'), \Input::get('date_end')); } public function getRegionList() { return $this->ClientRepository->getRegionList(\Input::get('date_start'), \Input::get('date_end')); } public function createClient() { $sp68be9c = \Input::get('data'); if (!($spe98b35 = $this->ClientRepository->findRegionById(trim($sp68be9c['region_id'])))) { return \Response::json(array('type' => 'error', 'message' => 'Data daerah tidak ditemukan.')); } $sp7612e0 = \Sentinel::getUser(); $sp68be9c['created_by'] = $sp7612e0->email; try { $sp12db67 = $this->ClientRepository->store($sp68be9c); } catch (\Exception $sp118c46) { return \Response::json(array('type' => 'error', 'message' => $sp118c46->getMessage())); } return \Response::json(array('type' => 'success', 'message' => "[{$sp12db67->client_name}] telah ditambah.")); } public function editClient($sp2bf607) { if (!($sp12db67 = $this->ClientRepository->findById(trim($sp2bf607)))) { return redirect(route('client.list'))->with('flashMessage', array('class' => 'danger', 'message' => 'Data klien tidak ditemukan.')); } return view('client.edit')->with('model', $sp12db67); } public function editClientRegional($sp2bf607) { if (!($sp12db67 = $this->ClientRepository->findRegionById(trim($sp2bf607)))) { return redirect(route('client.regional.list'))->with('flashMessage', array('class' => 'danger', 'message' => 'Data daerah tidak ditemukan.')); } return view('client.regionEdit')->with('model', $sp12db67); } public function updateClient($sp2bf607) { if (!($sp12db67 = $this->ClientRepository->findById(trim($sp2bf607)))) { return \Response::json(array('type' => 'error', 'message' => "Data client #{$sp2bf607} tidak ditemukan.")); } $sp68be9c = \Input::get('data'); if (!($spe98b35 = $this->ClientRepository->findRegionById(trim($sp68be9c['region_id'])))) { return \Response::json(array('type' => 'error', 'message' => 'Data daerah tidak ditemukan.')); } try { $sp12db67 = $this->ClientRepository->update($sp12db67, $sp68be9c); } catch (\Exception $sp118c46) { return \Response::json(array('type' => 'error', 'message' => $sp118c46->getMessage())); } return \Response::json(array('type' => 'success', 'message' => "[{$sp12db67->client_name}] telah diubah.")); } public function deleteClient($sp2bf607) { if (!($sp12db67 = $this->ClientRepository->findById(trim($sp2bf607)))) { return \Response::json(array('type' => 'error', 'message' => "Data klien #{$sp2bf607} tidak ditemukan.")); } $sp12db67->delete(); return \Response::json(array('type' => 'success', 'message' => 'Data klien telah berhasil dihapus.')); } public function createRegional() { $sp68be9c = \Input::get('data'); if (!isset($sp68be9c['is_parent'])) { if (!($spe98b35 = $this->ClientRepository->findRegionById($sp68be9c['parent_id']))) { return \Response::json(array('type' => 'error', 'message' => 'Data daerah tidak ditemukan.')); } if (!$spe98b35->is_parent) { return \Response::json(array('type' => 'error', 'message' => 'Data daerah bukan parent.')); } $sp68be9c['is_parent'] = false; } else { $sp68be9c['parent_id'] = 0; $sp68be9c['is_parent'] = true; } $sp7612e0 = \Sentinel::getUser(); $sp68be9c['created_by'] = $sp7612e0->email; try { $sp12db67 = $this->ClientRepository->storeRegional($sp68be9c); } catch (\Exception $sp118c46) { return \Response::json(array('type' => 'error', 'message' => $sp118c46->getMessage())); } return \Response::json(array('type' => 'success', 'message' => "[{$sp12db67->region_name}] telah ditambah.", 'redirect' => route('client.regional'))); } public function updateRegional($sp2bf607) { if (!($sp12db67 = $this->ClientRepository->findRegionById(trim($sp2bf607)))) { return \Response::json(array('type' => 'error', 'message' => 'Data daerah #{$id} tidak ditemukan.')); } $sp68be9c = \Input::get('data'); if (!isset($sp68be9c['is_parent'])) { if (!($spe98b35 = $this->ClientRepository->findRegionById($sp68be9c['parent_id']))) { return \Response::json(array('type' => 'error', 'message' => 'Data daerah tidak ditemukan.')); } if (!$spe98b35->is_parent) { return \Response::json(array('type' => 'error', 'message' => 'Data daerah bukan parent.')); } $sp68be9c['is_parent'] = false; } else { $sp68be9c['parent_id'] = 0; $sp68be9c['is_parent'] = true; } try { $sp12db67 = $this->ClientRepository->update($sp12db67, $sp68be9c); } catch (\Exception $sp118c46) { return \Response::json(array('type' => 'error', 'message' => $sp118c46->getMessage())); } return \Response::json(array('type' => 'success', 'message' => "[{$sp12db67->region_name}] telah diubah.", 'redirect' => route('client.regional'))); } public function deleteRegional($sp2bf607) { if (!($sp12db67 = $this->ClientRepository->findRegionById(trim($sp2bf607)))) { return \Response::json(array('type' => 'error', 'message' => "Data daerah #{$sp2bf607} tidak ditemukan.")); } $sp12db67->delete(); return \Response::json(array('type' => 'success', 'message' => "Data daerah #{$sp2bf607} telah dihapus.")); } }
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Repositories\ClientRepository;
+
+class ClientController extends Controller
+{
+    /**
+     * The ClientRepository instance.
+     *
+     * @var \App\Repositories\ClientRepository
+     */
+    protected $ClientRepository;
+
+    /**
+     * Create a new ClientController instance.
+     *
+     * @param \App\Repositories\ClientRepository $ClientRepository
+     * @return void
+     */
+    public function __construct(
+        ClientRepository $ClientRepository
+    ) {
+        parent::__construct();
+        $this->ClientRepository = $ClientRepository;
+        $this->middleware('admin');
+        $this->middleware('admin.client');
+    }
+
+    /**
+     * Get client datatable list
+     * @return json
+     */
+    public function getClientList () {
+        return $this->ClientRepository->getClientList(
+            \Input::get('date_start'), 
+            \Input::get('date_end')
+        );
+    }
+
+    /**
+     * Get region datatable list
+     * @return json
+     */
+    public function getRegionList () {
+        return $this->ClientRepository->getRegionList(
+            \Input::get('date_start'), 
+            \Input::get('date_end')
+        );
+    }
+
+    /**
+     * Create the client
+     * @return json
+     */
+    public function createClient () {
+        $data = \Input::get('data');
+
+        if (!$region = $this->ClientRepository->findRegionById(trim($data['region_id']))) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => 'Data daerah tidak ditemukan.'
+            ]);
+        }
+
+        $user = \Sentinel::getUser();
+        $data['created_by'] = $user->email;
+
+        try {
+            $model = $this->ClientRepository->store($data);
+        } catch (\Exception $e) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => $e->getMessage()
+            ]);
+        }
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => "[{$model->client_name}] telah ditambah.",
+        ]);
+    }
+
+    /**
+     * Edit client page
+     * @param string $id
+     * @return html
+     */
+    public function editClient ($id) {
+        if (!$model = $this->ClientRepository->findById(trim($id))) {
+            return redirect(route('client.list'))->with('flashMessage', [
+                'class' => 'danger',
+                'message' => 'Data klien tidak ditemukan.'
+            ]);
+        }
+
+        return view('client.edit')->with('model', $model);
+    }
+
+    /**
+     * Edit client regional page
+     * @param string $id
+     * @return html
+     */
+    public function editClientRegional ($id) {
+        if (!$model = $this->ClientRepository->findRegionById(trim($id))) {
+            return redirect(route('client.regional.list'))->with('flashMessage', [
+                'class' => 'danger',
+                'message' => 'Data daerah tidak ditemukan.'
+            ]);
+        }
+
+        return view('client.regionEdit')->with('model', $model);
+    }
+
+    /**
+     * Update client
+     * @param string $id
+     * @return json
+     */
+    public function updateClient ($id) {
+        if (!$model = $this->ClientRepository->findById(trim($id))) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => "Data client #{$id} tidak ditemukan."
+            ]);
+        }
+
+        $data = \Input::get('data');
+
+        if (!$region = $this->ClientRepository->findRegionById(trim($data['region_id']))) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => 'Data daerah tidak ditemukan.'
+            ]);
+        }
+
+        try {
+            $model = $this->ClientRepository->update($model, $data);
+        } catch (\Exception $e) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => $e->getMessage()
+            ]);
+        }
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => "[{$model->client_name}] telah diubah.",
+        ]);
+    }
+
+    /**
+     * Delete client
+     * @param string $id
+     * @return json   
+     */
+    public function deleteClient ($id) {
+        if (!$model = $this->ClientRepository->findById(trim($id))) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => "Data klien #{$id} tidak ditemukan."
+            ]);
+        }
+
+        $model->delete();
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => 'Data klien telah berhasil dihapus.'
+        ]);
+    }
+
+    /**
+     * Create regional
+     * @return json
+     */
+    public function createRegional () {
+        $data = \Input::get('data');
+
+        if (!isset($data['is_parent'])) {
+            if (!$region = $this->ClientRepository->findRegionById($data['parent_id'])) {
+                return \Response::json([
+                    'type' => 'error',
+                    'message' => 'Data daerah tidak ditemukan.'
+                ]);
+            }
+
+            if (!$region->is_parent) {
+                return \Response::json([
+                    'type' => 'error',
+                    'message' => 'Data daerah bukan parent.'
+                ]);
+            }
+            $data['is_parent'] = false;
+        } else {
+            $data['parent_id'] = 0;
+            $data['is_parent'] = true;
+        }
+
+        $user = \Sentinel::getUser();
+        $data['created_by'] = $user->email;
+
+        try {
+            $model = $this->ClientRepository->storeRegional($data);
+        } catch (\Exception $e) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => $e->getMessage()
+            ]);
+        }
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => "[{$model->region_name}] telah ditambah.",
+            'redirect' => route('client.regional')
+        ]);
+    }
+
+    /**
+     * Update regional
+     * @param string $id
+     * @return json    
+     */
+    public function updateRegional ($id) {
+        if (!$model = $this->ClientRepository->findRegionById(trim($id))) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => 'Data daerah #{$id} tidak ditemukan.'
+            ]);
+        }
+
+        $data = \Input::get('data');
+
+        if (!isset($data['is_parent'])) {
+            if (!$region = $this->ClientRepository->findRegionById($data['parent_id'])) {
+                return \Response::json([
+                    'type' => 'error',
+                    'message' => 'Data daerah tidak ditemukan.'
+                ]);
+            }
+
+            if (!$region->is_parent) {
+                return \Response::json([
+                    'type' => 'error',
+                    'message' => 'Data daerah bukan parent.'
+                ]);
+            }
+            $data['is_parent'] = false;
+        } else {
+            $data['parent_id'] = 0;
+            $data['is_parent'] = true;
+        }
+
+        try {
+            $model = $this->ClientRepository->update($model, $data);
+        } catch (\Exception $e) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => $e->getMessage()
+            ]);
+        }
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => "[{$model->region_name}] telah diubah.",
+            'redirect' => route('client.regional')
+        ]);
+    }
+
+    /**
+     * Delete regional
+     * @param string $id
+     * @return json    
+     */
+    public function deleteRegional ($id) {
+        if (!$model = $this->ClientRepository->findRegionById(trim($id))) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => "Data daerah #{$id} tidak ditemukan."
+            ]);
+        }
+
+        $model->delete();
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => "Data daerah #{$id} telah dihapus.",
+        ]); 
+    }
+}

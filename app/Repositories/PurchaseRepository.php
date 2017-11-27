@@ -1,2 +1,120 @@
 <?php
-namespace App\Repositories; use App\Models\Purchase; use Yajra\DataTables\Facades\DataTables; class PurchaseRepository extends BaseRepository { protected $model; public function __construct() { $this->model = new Purchase(); } protected function saveModel($sp12db67, $sp68be9c) { foreach ($sp68be9c as $sp22c61b => $sp75a6c8) { $sp12db67->{$sp22c61b} = $sp75a6c8; } $sp12db67->save(); return $sp12db67; } public function store($sp68be9c) { $sp12db67 = $this->saveModel(new $this->model(), $sp68be9c); return $sp12db67; } public function update($sp12db67, $sp68be9c) { $sp12db67 = $this->saveModel($sp12db67, $sp68be9c); return $sp12db67; } public function findById($sp2bf607) { return $this->model->where('id', $sp2bf607)->first(); } public function findByInvoice($sp2bf607) { return $this->model->where('invoice_id', $sp2bf607)->first(); } public function findReportSupplier($spe1dc49, $sp32ff68, $spdf551d) { $sp12db67 = $this->model; if (!is_null($spdf551d)) { $sp12db67 = $sp12db67->where('supplier_id', $spdf551d->id); } $sp12db67 = $sp12db67->whereMonth('created_at', $spe1dc49)->whereYear('created_at', $sp32ff68)->get(); return $sp12db67; } public function createInvoiceId() { $spe5b91c = $this->model->orderBy('id', 'desc')->pluck('id')->first(); $spe5b91c += 1; $sp2bf607 = 'INV-' . str_pad($spe5b91c, 8, '0', STR_PAD_LEFT); $sp7ef4b7 = $this->findByInvoice($sp2bf607); while ($sp7ef4b7) { $spe5b91c += 1; $sp2bf607 = 'INV-' . str_pad($spe5b91c, 8, '0', STR_PAD_LEFT); $sp7ef4b7 = $this->findByInvoice($sp2bf607); } return $sp2bf607; } public function getList($spe81ede = '', $sp0757f9 = '') { if ($spe81ede == '' && $sp0757f9 == '') { $spe88479 = $this->model->query(); } else { $spe88479 = $this->model; if ($spe81ede != '') { $spe88479 = $spe88479->whereDate('created_at', '>=', trim($spe81ede)); } if ($sp0757f9 != '') { $spe88479 = $spe88479->whereDate('created_at', '<=', trim($sp0757f9)); } } $sp68be9c = DataTables::eloquent($spe88479)->addColumn('action', function ($sp12db67) { return view('purchase.action')->with('model', $sp12db67); })->editColumn('is_complete', function ($sp12db67) { if ($sp12db67->is_complete) { return '<span class="badge badge-success">SELESAI</span>'; } else { return '<span class="badge badge-danger">BELUM SELESAI</span>'; } })->editColumn('supplier', function ($sp12db67) { if ($spdf551d = $sp12db67->supplier) { return '<a href="' . route('supplier.edit', array('id' => $spdf551d->id)) . '" target="_blank">' . $spdf551d->supplier_name . '</a>'; } else { return '<span class="badge badge-danger">TIDAK ADA SUPPLIER</span>'; } })->editColumn('total_final', function ($sp12db67) { return number_format($sp12db67->total_final, 0); })->rawColumns(array('is_complete', 'action', 'supplier'))->make(true); return $sp68be9c; } }
+
+namespace App\Repositories;
+
+use App\Models\Purchase;
+use Yajra\DataTables\Facades\DataTables;
+
+class PurchaseRepository extends BaseRepository
+{
+    protected $model;
+
+    public function __construct() {
+        $this->model = new Purchase;
+    }
+
+    protected function saveModel($model, $data) {
+        foreach ($data as $k=>$d) {
+            $model->{$k} = $d;
+        }
+        $model->save();
+        return $model;
+    }
+
+    public function store($data) {
+        $model = $this->saveModel(new $this->model, $data);
+        return $model;
+    }
+
+    public function update($model, $data) {
+        $model = $this->saveModel($model, $data);
+        return $model;
+    }
+
+    public function findById ($id) {
+        return $this->model->where('id', $id)->first();
+    }
+
+    public function findByInvoice ($id) {
+        return $this->model->where('invoice_id', $id)->first();
+    }
+
+    /**
+     * [findReportSupplier description]
+     * @param integer $month
+     * @param integer $year
+     * @param App\Models\Supplier $supplier
+     * @return json
+     */
+    public function findReportSupplier ($month, $year, $supplier) {
+        $model = $this->model;
+
+        if (!is_null($supplier)) {
+            $model = $model->where('supplier_id', $supplier->id);
+        }
+                    
+        $model = $model->whereMonth('created_at', $month)
+                    ->whereYear('created_at', $year)
+                    ->get();
+
+        return $model;
+    }
+
+    /**
+     * Create unique invoice ID based on last table ID
+     * @return string
+     */
+    public function createInvoiceId () {
+        $lastId = $this->model->orderBy('id', 'desc')->pluck('id')->first();
+        $lastId += 1;
+        $id = 'INV-' . str_pad($lastId, 8, '0', STR_PAD_LEFT);
+        $check = $this->findByInvoice($id);
+
+        while ($check) {
+            $lastId += 1;
+            $id = 'INV-' . str_pad($lastId, 8, '0', STR_PAD_LEFT);
+            $check = $this->findByInvoice($id);
+        }
+
+        return $id;
+    }
+
+    public function getList ($from='', $to='') {
+        if ($from == '' && $to == '') {
+            $query = $this->model->query();
+        } else {
+            $query = $this->model;
+            if ($from != '') {
+                $query = $query->whereDate('created_at', '>=', trim($from));
+            }
+            if ($to != '') {
+                $query = $query->whereDate('created_at', '<=', trim($to));
+            }
+        }
+        $data = DataTables::eloquent($query)
+                ->addColumn('action', function ($model) {
+                    return view('purchase.action')->with('model', $model);
+                })
+                ->editColumn('is_complete', function ($model) {
+                    if ($model->is_complete) {
+                        return '<span class="badge badge-success">SELESAI</span>';
+                    } else {
+                        return '<span class="badge badge-danger">BELUM SELESAI</span>';
+                    }
+                })
+                ->editColumn('supplier', function ($model) {
+                    if ($supplier = $model->supplier) {
+                        return '<a href="' . route('supplier.edit', ['id' => $supplier->id]) . '" target="_blank">' . $supplier->supplier_name . '</a>';
+                    } else {
+                        return '<span class="badge badge-danger">TIDAK ADA SUPPLIER</span>';
+                    }
+                })
+                ->editColumn('total_final', function ($model) {
+                    return number_format($model->total_final, 0);
+                })
+                ->rawColumns(['is_complete', 'action', 'supplier'])
+                ->make(true);
+        return $data;
+    }
+
+}

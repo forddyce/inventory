@@ -1,5 +1,7 @@
 # Inventory System, Web Based
 
+**LARAVEL**
+
 Run:
 - `composer install`
 - `php artisan migrate && php artisan db:seed`

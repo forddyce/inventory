@@ -1,2 +1,241 @@
 <?php
-namespace App\Http\Controllers; use Illuminate\Http\Request; use App\Repositories\SalesRepository; use App\Repositories\ClientRepository; use App\Repositories\ReceivableRepository; use App\Repositories\ItemRepository; class SalesController extends Controller { protected $SalesRepository; public function __construct(SalesRepository $spcb3066) { parent::__construct(); $this->SalesRepository = $spcb3066; $this->middleware('admin'); $this->middleware('admin.sales'); } public function getList() { return $this->SalesRepository->getList(\Input::get('date_start'), \Input::get('date_end')); } public function getInvoice($sp2bf607) { if (!($sp12db67 = $this->SalesRepository->findById(trim($sp2bf607)))) { return "Data penjualan ID #{$sp2bf607} tidak ditemukan."; } return view('sales.invoice')->with('model', $sp12db67); } public function createSales() { $sp7612e0 = \Sentinel::getUser(); $sp68be9c = \Input::get('data'); if (!isset($sp68be9c['client_id'])) { return \Response::json(array('type' => 'error', 'message' => 'Data klien tidak lengkap.')); } if (!isset($sp68be9c['is_complete']) && ($sp68be9c['paid_date'] == '' || $sp68be9c['receivable_amount'] == '')) { return \Response::json(array('type' => 'error', 'message' => 'Data piutang tidak lengkap.')); } $sp50bb63 = new ClientRepository(); if (!($spfd3b5a = $sp50bb63->findById(trim($sp68be9c['client_id'])))) { return \Response::json(array('type' => 'error', 'message' => 'Data klien tidak ditemukan.')); } $spd35261 = json_decode(\Input::get('sales_info'), 1); if (count($spd35261) <= 0) { return \Response::json(array('type' => 'error', 'message' => 'Data penjualan kosong.')); } $sp560c94 = 0; $sp8f4c98 = 0; $sp91ddc8 = 0; $spb47cc4 = array(); $spa36343 = new ItemRepository(); foreach ($spd35261 as $sp22c61b => $sp4ce9b2) { if (!($spaa89da = $spa36343->findByCode(trim($sp4ce9b2['item_code'])))) { return \Response::json(array('type' => 'error', 'message' => "Barang {$sp4ce9b2['item_id']} tidak ditemukan.")); break; } if ($spaa89da->stock < $sp4ce9b2['quantity']) { return \Response::json(array('type' => 'error', 'message' => "Barang {$sp4ce9b2['item_name']} tersisa {$spaa89da->stock}, di-input [{$sp4ce9b2['quantity']}].")); } $spaa89da->stock -= $sp4ce9b2['quantity']; if ($spaa89da->stock < 0) { $spaa89da->stock = 0; } $spaa89da->last_sales_price = isset($sp4ce9b2['price']) ? $sp4ce9b2['price'] : 0; array_push($spb47cc4, array('sales_data' => $sp4ce9b2, 'item' => $spaa89da)); $sp560c94 += isset($sp4ce9b2['price']) ? $sp4ce9b2['price'] : 0; $sp8f4c98 += isset($sp4ce9b2['discount']) ? $sp4ce9b2['discount'] : 0; $sp91ddc8 += isset($sp4ce9b2['total']) ? $sp4ce9b2['total'] : 0; $spd35261[$sp22c61b]['item_unit'] = $spaa89da->item_unit; } $sp0835d7 = $this->SalesRepository->createInvoiceId(); try { $sp12db67 = $this->SalesRepository->store(array('created_by' => $sp7612e0->email, 'client_id' => $spfd3b5a->id, 'invoice_id' => $sp0835d7, 'total_gross' => $sp560c94, 'total_discount' => $sp8f4c98, 'total_net' => $sp91ddc8, 'is_complete' => isset($sp68be9c['is_complete']) ? 1 : 0, 'sales_info' => json_encode($spd35261))); } catch (\Exception $sp118c46) { return \Response::json(array('type' => 'error', 'message' => $sp118c46->getMessage())); } if (!isset($sp68be9c['is_complete'])) { $sp76de4d = new ReceivableRepository(); $sp93ffed = $sp76de4d->store(array('created_by' => $sp7612e0->email, 'sales_id' => $sp12db67->id, 'client_id' => $spfd3b5a->id, 'amount' => $sp68be9c['receivable_amount'], 'amount_left' => $sp68be9c['receivable_amount'], 'invoice_id' => $sp0835d7, 'due_date' => $sp68be9c['paid_date'])); } foreach ($spb47cc4 as $sp2bf607) { $spaa89da = $sp2bf607['item']; $spaa89da->save(); $spa36343->addSalesHistory($sp2bf607['sales_data'], $spaa89da, $sp12db67); } return \Response::json(array('type' => 'success', 'message' => 'Data penjualan telah ditambah.', 'redirect' => route('sales.all'))); } public function editSales($sp2bf607) { return false; } public function updateSales($sp2bf607) { return false; } public function deleteSales($sp2bf607) { if (!($sp12db67 = $this->SalesRepository->findById(trim($sp2bf607)))) { return \Response::json(array('type' => 'error', 'message' => "Data penjualan #{$sp2bf607} tidak ditemukan.")); } $sp12db67->delete(); return \Response::json(array('type' => 'success', 'message' => 'Data penjualan berhasil dihapus.')); } public function report() { if (!\Input::has('month') || !\Input::has('year')) { return 'Data bulan dan tahun tidak ada.'; } $spfd3b5a = null; if (\Input::get('client_id') != 0) { $sp2d76c7 = new ClientRepository(); if (!($spfd3b5a = $sp2d76c7->findById(trim(\Input::get('client_id'))))) { return 'Data klien tidak ditemukan.'; } } $sp701576 = $this->SalesRepository->findReportClient(trim(\Input::get('month')), trim(\Input::get('year')), $spfd3b5a); return view('sales.reportDetail')->with('models', $sp701576); } }
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Repositories\SalesRepository;
+use App\Repositories\ClientRepository;
+use App\Repositories\ReceivableRepository;
+use App\Repositories\ItemRepository;
+
+class SalesController extends Controller
+{
+    /**
+     * The SalesRepository instance.
+     *
+     * @var \App\Repositories\SalesRepository
+     */
+    protected $SalesRepository;
+
+    /**
+     * Create a new SalesController instance.
+     *
+     * @param \App\Repositories\SalesRepository $SalesRepository
+     * @return void
+     */
+    public function __construct(
+        SalesRepository $SalesRepository
+    ) {
+        parent::__construct();
+        $this->SalesRepository = $SalesRepository;
+        $this->middleware('admin');
+        $this->middleware('admin.sales');
+    }
+
+    /**
+     * Get datatable list
+     * @return json
+     */
+    public function getList () {
+        return $this->SalesRepository->getList(
+            \Input::get('date_start'), 
+            \Input::get('date_end')
+        );
+    }
+
+    public function getInvoice ($id) {
+        if (!$model = $this->SalesRepository->findById(trim($id))) {
+            return "Data penjualan ID #{$id} tidak ditemukan.";
+        }
+        return view('sales.invoice')->with('model', $model);
+    }
+
+    /**
+     * Create the Sales
+     * @return json
+     */
+    public function createSales () {
+        $user = \Sentinel::getUser();
+        $data = \Input::get('data');
+
+        if (!isset($data['client_id'])) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => 'Data klien tidak lengkap.'
+            ]);
+        }
+
+        if (!isset($data['is_complete']) && (
+            $data['paid_date'] == '' || $data['receivable_amount'] == '')
+        ) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => 'Data piutang tidak lengkap.'
+            ]);
+        }
+
+        $ClientRepo = new ClientRepository;
+        if (!$client = $ClientRepo->findById(trim($data['client_id']))) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => "Data klien tidak ditemukan."
+            ]);
+        }
+
+        /* process sales data */
+        $salesInfo = json_decode(\Input::get('sales_info'), 1);
+
+        if (count($salesInfo) <= 0) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => "Data penjualan kosong."
+            ]);
+        }
+
+        $totalGross = 0;
+        $totalDiscount = 0;
+        $totalNet = 0;
+        $itemData = [];
+        $itemRepo = new ItemRepository;
+
+        foreach ($salesInfo as $k=>$sales) {
+            if (!$item = $itemRepo->findByCode(trim($sales['item_code']))) {
+                return \Response::json([
+                    'type' => 'error',
+                    'message' => "Barang {$sales['item_id']} tidak ditemukan."
+                ]);
+                break;
+            }
+
+            if ($item->stock < $sales['quantity']) {
+                return \Response::json([
+                    'type' => 'error',
+                    'message' => "Barang {$sales['item_name']} tersisa {$item->stock}, di-input [{$sales['quantity']}]."
+                ]);
+            }
+
+            $item->stock -= $sales['quantity'];
+            if ($item->stock < 0) $item->stock = 0;
+            $item->last_sales_price = isset($sales['price']) ? $sales['price'] : 0;
+            array_push($itemData, [
+                'sales_data' => $sales, 
+                'item' => $item
+            ]);
+
+            $totalGross += isset($sales['price']) ? $sales['price'] : 0;
+            $totalDiscount += isset($sales['discount']) ? $sales['discount'] : 0;
+            $totalNet += isset($sales['total']) ? $sales['total'] : 0;
+            $salesInfo[$k]['item_unit'] = $item->item_unit;
+        }
+
+        $invoiceId = $this->SalesRepository->createInvoiceId();
+
+        try {
+            $model = $this->SalesRepository->store([
+                'created_by' => $user->email,
+                'client_id' => $client->id,
+                'invoice_id' => $invoiceId,
+                'total_gross' => $totalGross,
+                'total_discount' => $totalDiscount,
+                'total_net' => $totalNet,
+                'is_complete' => isset($data['is_complete']) ? 1 : 0,
+                'sales_info' => json_encode($salesInfo)
+            ]);
+        } catch (\Exception $e) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => $e->getMessage()
+            ]);
+        }
+
+        /* add to receivable if not complete */
+        if (!isset($data['is_complete'])) {
+            $receivableRepo = new ReceivableRepository;
+            $receivableModel = $receivableRepo->store([
+                'created_by' => $user->email,
+                'sales_id' => $model->id,
+                'client_id' => $client->id,
+                'amount' => $data['receivable_amount'],
+                'amount_left' => $data['receivable_amount'],
+                'invoice_id' => $invoiceId,
+                'due_date' => $data['paid_date']
+            ]);
+        }
+
+        /* sales history and update stock */
+        foreach ($itemData as $id) {
+            $item = $id['item'];
+            $item->save();
+            $itemRepo->addSalesHistory($id['sales_data'], $item, $model);
+        }
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => 'Data penjualan telah ditambah.',
+            'redirect' => route('sales.all')
+        ]);
+    }
+
+    /**
+     * Edit Sales page
+     * @param string $id
+     * @return html
+     */
+    public function editSales ($id) {
+        return false;
+    }
+
+    /**
+     * Update the Sales
+     * @return json
+     */
+    public function updateSales ($id) {
+        return false;
+    }
+
+    /**
+     * Delete the Sales
+     * @return json
+     */
+    public function deleteSales ($id) {
+        if (!$model = $this->SalesRepository->findById(trim($id))) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => "Data penjualan #{$id} tidak ditemukan."
+            ]);
+        }
+
+        $model->delete();
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => "Data penjualan berhasil dihapus.",
+        ]);
+    }
+
+    /**
+     * Expense report by date and year
+     * @return html
+     */
+    public function report () {
+        if (!\Input::has('month') || !\Input::has('year')) {
+            return "Data bulan dan tahun tidak ada.";
+        }
+
+        $client = null;
+        if (\Input::get('client_id') != 0) {
+            $clientRepo = new ClientRepository;
+            if (!$client = $clientRepo->findById(trim(\Input::get('client_id')))) {
+                return "Data klien tidak ditemukan.";
+            }
+        }
+
+        $models = $this->SalesRepository->findReportClient(
+            trim(\Input::get('month')),
+            trim(\Input::get('year')),
+            $client
+        );
+
+        return view('sales.reportDetail')->with('models', $models);
+    }
+}

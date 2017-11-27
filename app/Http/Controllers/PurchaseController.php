@@ -1,2 +1,233 @@
 <?php
-namespace App\Http\Controllers; use Illuminate\Http\Request; use App\Repositories\PurchaseRepository; use App\Repositories\SupplierRepository; use App\Repositories\DebtRepository; use App\Repositories\ItemRepository; class PurchaseController extends Controller { protected $PurchaseRepository; public function __construct(PurchaseRepository $sp78ec87) { parent::__construct(); $this->PurchaseRepository = $sp78ec87; $this->middleware('admin'); $this->middleware('admin.purchase'); } public function getList() { return $this->PurchaseRepository->getList(\Input::get('date_start'), \Input::get('date_end')); } public function getInvoice($sp2bf607) { if (!($sp12db67 = $this->PurchaseRepository->findById(trim($sp2bf607)))) { return "Data pembelian ID #{$sp2bf607} tidak ditemukan."; } return view('purchase.invoice')->with('model', $sp12db67); } public function createPurchase() { $sp68be9c = \Input::get('data'); $sp7612e0 = \Sentinel::getUser(); if (!isset($sp68be9c['invoice_id']) || !isset($sp68be9c['supplier_id'])) { return \Response::json(array('type' => 'error', 'message' => 'Data invoice / supplier tidak lengkap.')); } if (!isset($sp68be9c['is_complete']) && ($sp68be9c['paid_date'] == '' || $sp68be9c['debt_amount'] == '')) { return \Response::json(array('type' => 'error', 'message' => 'Data hutang tidak lengkap.')); } $spded46d = new SupplierRepository(); if (!($spdf551d = $spded46d->findById(trim($sp68be9c['supplier_id'])))) { return \Response::json(array('type' => 'error', 'message' => 'Data supplier tidak ditemukan.')); } $sp369af5 = json_decode(\Input::get('purchase_info'), 1); if (count($sp369af5) <= 0) { return \Response::json(array('type' => 'error', 'message' => 'Data pembelian kosong.')); } $sp560c94 = 0; $sp8f4c98 = 0; $sp91ddc8 = 0; $spb47cc4 = array(); $spa36343 = new ItemRepository(); foreach ($sp369af5 as $sp22c61b => $sp0bf594) { if (!($spaa89da = $spa36343->findByCode(trim($sp0bf594['item_code'])))) { return \Response::json(array('type' => 'error', 'message' => "Barang {$sp0bf594['item_id']} tidak ditemukan.")); break; } $spaa89da->stock += $sp0bf594['quantity']; $spaa89da->last_purchase_price = isset($sp0bf594['price']) ? $sp0bf594['price'] : 0; array_push($spb47cc4, array('purchase_data' => $sp0bf594, 'item' => $spaa89da)); $sp560c94 += isset($sp0bf594['price']) ? $sp0bf594['price'] : 0; $sp8f4c98 += isset($sp0bf594['discount']) ? $sp0bf594['discount'] : 0; $sp91ddc8 += isset($sp0bf594['total']) ? $sp0bf594['total'] : 0; $sp369af5[$sp22c61b]['item_unit'] = $spaa89da->item_unit; } try { $sp12db67 = $this->PurchaseRepository->store(array('created_by' => $sp7612e0->email, 'supplier_id' => $spdf551d->id, 'invoice_id' => $sp68be9c['invoice_id'], 'total_price' => $sp560c94, 'total_discount' => $sp8f4c98, 'total_final' => $sp91ddc8, 'is_complete' => isset($sp68be9c['is_complete']) ? 1 : 0, 'purchase_info' => json_encode($sp369af5))); } catch (\Exception $sp118c46) { return \Response::json(array('type' => 'error', 'message' => $sp118c46->getMessage())); } if (!isset($sp68be9c['is_complete'])) { $spb78b2e = new DebtRepository(); $sp40a745 = $spb78b2e->store(array('created_by' => $sp7612e0->email, 'purchase_id' => $sp12db67->id, 'supplier_id' => $spdf551d->id, 'invoice_id' => $sp68be9c['invoice_id'], 'amount' => $sp68be9c['debt_amount'], 'amount_left' => $sp68be9c['debt_amount'], 'due_date' => $sp68be9c['paid_date'])); } foreach ($spb47cc4 as $sp2bf607) { $spaa89da = $sp2bf607['item']; $spaa89da->save(); $spa36343->addPurchaseHistory($sp2bf607['purchase_data'], $spaa89da, $sp12db67); } return \Response::json(array('type' => 'success', 'message' => 'Data pembelian telah ditambah.', 'redirect' => route('purchase.all'))); } public function editPurchase($sp2bf607) { return false; } public function updatePurchase($sp2bf607) { return false; } public function deletePurchase($sp2bf607) { if (!($sp12db67 = $this->PurchaseRepository->findById(trim($sp2bf607)))) { return \Response::json(array('type' => 'error', 'message' => 'Data pembelian #{$id} tidak ditemukan.')); } $sp12db67->delete(); return \Response::json(array('type' => 'success', 'message' => 'Data penjualan berhasil dihapus.')); } public function report() { if (!\Input::has('month') || !\Input::has('year')) { return 'Data bulan dan tahun tidak ada.'; } $spdf551d = null; if (\Input::get('supplier_id') != 0) { $spded46d = new SupplierRepository(); if (!($spdf551d = $spded46d->findById(trim(\Input::get('supplier_id'))))) { return 'Data supplier tidak ditemukan.'; } } $sp701576 = $this->PurchaseRepository->findReportSupplier(trim(\Input::get('month')), trim(\Input::get('year')), $spdf551d); return view('purchase.reportDetail')->with('models', $sp701576); } }
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Repositories\PurchaseRepository;
+use App\Repositories\SupplierRepository;
+use App\Repositories\DebtRepository;
+use App\Repositories\ItemRepository;
+
+class PurchaseController extends Controller
+{
+    /**
+     * The PurchaseRepository instance.
+     *
+     * @var \App\Repositories\PurchaseRepository
+     */
+    protected $PurchaseRepository;
+
+    /**
+     * Create a new PurchaseController instance.
+     *
+     * @param \App\Repositories\PurchaseRepository $PurchaseRepository
+     * @return void
+     */
+    public function __construct(
+        PurchaseRepository $PurchaseRepository
+    ) {
+        parent::__construct();
+        $this->PurchaseRepository = $PurchaseRepository;
+        $this->middleware('admin');
+        $this->middleware('admin.purchase');
+    }
+
+    /**
+     * Get datatable list
+     * @return json
+     */
+    public function getList () {
+        return $this->PurchaseRepository->getList(
+            \Input::get('date_start'), 
+            \Input::get('date_end')
+        );
+    }
+
+    public function getInvoice ($id) {
+        if (!$model = $this->PurchaseRepository->findById(trim($id))) {
+            return "Data pembelian ID #{$id} tidak ditemukan.";
+        }
+        return view('purchase.invoice')->with('model', $model);
+    }
+
+    /**
+     * Create the Purchase
+     * @return json
+     */
+    public function createPurchase () {
+        $data = \Input::get('data');
+        $user = \Sentinel::getUser();
+
+        if (!isset($data['invoice_id']) || !isset($data['supplier_id'])) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => 'Data invoice / supplier tidak lengkap.'
+            ]);
+        }
+
+        if (!isset($data['is_complete']) && (
+            $data['paid_date'] == '' || $data['debt_amount'] == '')
+        ) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => 'Data hutang tidak lengkap.'
+            ]);
+        }
+
+        $supplierRepo = new SupplierRepository;
+        if (!$supplier = $supplierRepo->findById(trim($data['supplier_id']))) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => 'Data supplier tidak ditemukan.'
+            ]);
+        }
+
+        /* process Purchase data */
+        $PurchaseInfo = json_decode(\Input::get('purchase_info'), 1);
+
+        if (count($PurchaseInfo) <= 0) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => 'Data pembelian kosong.'
+            ]);
+        }
+
+        $totalGross = 0;
+        $totalDiscount = 0;
+        $totalNet = 0;
+        $itemData = [];
+        $itemRepo = new ItemRepository;
+
+        /** check each item */
+        foreach ($PurchaseInfo as $k=>$Purchase) {
+            if (!$item = $itemRepo->findByCode(trim($Purchase['item_code']))) {
+                return \Response::json([
+                    'type' => 'error',
+                    'message' => "Barang {$Purchase['item_id']} tidak ditemukan."
+                ]);
+                break;
+            }
+
+            $item->stock += $Purchase['quantity'];
+            $item->last_purchase_price = isset($Purchase['price']) ? $Purchase['price'] : 0;
+            array_push($itemData, [
+                'purchase_data' => $Purchase, 
+                'item' => $item
+            ]);
+
+            $totalGross += isset($Purchase['price']) ? $Purchase['price'] : 0;
+            $totalDiscount += isset($Purchase['discount']) ? $Purchase['discount'] : 0;
+            $totalNet += isset($Purchase['total']) ? $Purchase['total'] : 0;
+            $PurchaseInfo[$k]['item_unit'] = $item->item_unit;
+        }
+
+        // save purchase data on database
+        try {
+            $model = $this->PurchaseRepository->store([
+                'created_by' => $user->email,
+                'supplier_id' => $supplier->id,
+                'invoice_id' => $data['invoice_id'],
+                'total_price' => $totalGross,
+                'total_discount' => $totalDiscount,
+                'total_final' => $totalNet,
+                'is_complete' => isset($data['is_complete']) ? 1 : 0,
+                'purchase_info' => json_encode($PurchaseInfo)
+            ]);
+        } catch (\Exception $e) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => $e->getMessage()
+            ]);
+        }
+
+        /* add to debt if not complete */
+        if (!isset($data['is_complete'])) {
+            $debtRepo = new DebtRepository;
+            $debtModel = $debtRepo->store([
+                'created_by' => $user->email,
+                'purchase_id' => $model->id,
+                'supplier_id' => $supplier->id,
+                'invoice_id' => $data['invoice_id'],
+                'amount' => $data['debt_amount'],
+                'amount_left' => $data['debt_amount'],
+                'due_date' => $data['paid_date']
+            ]);
+        }
+
+        /* purchase history and update stock */
+        foreach ($itemData as $id) {
+            $item = $id['item'];
+            $item->save();
+            $itemRepo->addPurchaseHistory($id['purchase_data'], $item, $model);
+        }
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => 'Data pembelian telah ditambah.',
+            'redirect' => route('purchase.all')
+        ]);
+    }
+
+    /**
+     * Edit purchase page
+     * @param string $id
+     * @return html
+     */
+    public function editPurchase ($id) {
+        return false;
+    }
+
+    /**
+     * Update the Purchase
+     * @return json
+     */
+    public function updatePurchase ($id) {
+        return false;
+    }
+
+    /**
+     * Delete the Purchase
+     * @return json
+     */
+    public function deletePurchase ($id) {
+        if (!$model = $this->PurchaseRepository->findById(trim($id))) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => 'Data pembelian #{$id} tidak ditemukan.'
+            ]);
+        }
+        
+        $model->delete();
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => 'Data penjualan berhasil dihapus.',
+        ]);
+    }
+
+    /**
+     * Purchase report by date and year
+     * @return html
+     */
+    public function report () {
+        if (!\Input::has('month') || !\Input::has('year')) {
+            return "Data bulan dan tahun tidak ada.";
+        }
+
+        $supplier = null;
+        if (\Input::get('supplier_id') != 0) {
+            $supplierRepo = new SupplierRepository;
+            if (!$supplier = $supplierRepo->findById(trim(\Input::get('supplier_id')))) {
+                return "Data supplier tidak ditemukan.";
+            }
+        }
+
+        $models = $this->PurchaseRepository->findReportSupplier(
+            trim(\Input::get('month')),
+            trim(\Input::get('year')),
+            $supplier
+        );
+
+        return view('purchase.reportDetail')->with('models', $models);
+    }
+}

@@ -1,2 +1,141 @@
 <?php
-namespace App\Http\Controllers; use Illuminate\Http\Request; use App\Repositories\UserRepository; class UserController extends Controller { protected $UserRepository; public function __construct(UserRepository $sp326f5f) { parent::__construct(); $this->UserRepository = $sp326f5f; $this->middleware('admin'); $this->middleware('admin.user'); } public function getList() { return $this->UserRepository->getList(\Input::get('date_start'), \Input::get('date_end')); } public function createUser() { $sp68be9c = \Input::get('data'); try { $sp7612e0 = $this->UserRepository->createUser($sp68be9c); } catch (\Exception $sp118c46) { if (isset($sp7612e0)) { $sp7612e0->delete(); } return \Response::json(array('type' => 'error', 'message' => $sp118c46->getMessage())); } return \Response::json(array('type' => 'success', 'message' => 'User berhasil dibuat.')); } public function editUser($sp2bf607) { if (!($spf82f68 = \Sentinel::findById(trim($sp2bf607)))) { return \Response::json(array('type' => 'error', 'message' => 'User tidak ditemukan.')); } return view('user.edit')->with('model', $spf82f68); } public function updateUser($sp2bf607) { if (!($spf82f68 = \Sentinel::findById(trim($sp2bf607)))) { return \Response::json(array('type' => 'error', 'message' => 'User tidak ditemukan.')); } if ($spf82f68->email == 'forddyce92@gmail.com') { return \Response::json(array('type' => 'error', 'message' => 'User tidak dapat diupdate.')); } $sp68be9c = \Input::get('data'); try { $sp7612e0 = $this->UserRepository->updateUser($spf82f68, $sp68be9c); } catch (\Exception $sp118c46) { return \Response::json(array('type' => 'error', 'message' => $sp118c46->getMessage())); } return \Response::json(array('type' => 'success', 'message' => 'User berhasil diupdate.')); } public function deleteUser($sp2bf607) { if (!($specf32c = \Sentinel::findById(trim($sp2bf607)))) { return \Response::json(array('type' => 'error', 'message' => 'User tidak ditemukan.')); } if ($specf32c->email == 'forddyce92@gmail.com') { return \Response::json(array('type' => 'error', 'message' => 'User tidak dapat diupdate.')); } $specf32c->delete(); return \Response::json(array('type' => 'success', 'message' => 'User berhasil dihapus.')); } }
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Repositories\UserRepository;
+
+class UserController extends Controller
+{
+    protected $UserRepository;
+
+    /**
+     * Create a new UserController instance.
+     * 
+     * @param \App\Repositories\UserRepository $UserRepository
+     * @return void
+     */
+    public function __construct (
+        UserRepository $UserRepository
+    ) {
+        parent::__construct();
+        $this->UserRepository = $UserRepository;
+        $this->middleware('admin');
+        $this->middleware('admin.user');
+    }
+
+    /**
+     * Get user list
+     * @return json
+     */
+    public function getList () {
+        return $this->UserRepository->getList(
+            \Input::get('date_start'), 
+            \Input::get('date_end')
+        );
+    }
+
+    /**
+     * Create User
+     * @return json
+     */
+    public function createUser () {
+        $data = \Input::get('data');
+
+        try {
+            $user = $this->UserRepository->createUser($data);
+        } catch (\Exception $e) {
+            if (isset($user)) $user->delete();
+            return \Response::json([
+                'type' => 'error',
+                'message' => $e->getMessage()
+            ]);
+        }
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => "User berhasil dibuat."
+        ]);
+    }
+
+    /**
+     * Edit User Page
+     * @param string $id
+     * @return html
+     */
+    public function editUser ($id) {
+        if (!$updateUser = \Sentinel::findById(trim($id))) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => "User tidak ditemukan."
+            ]);
+        }
+
+        return view('user.edit')->with('model', $updateUser);
+    }
+
+    /**
+     * Update User
+     * @param string $id
+     * @return json
+     */
+    public function updateUser ($id) {
+        if (!$updateUser = \Sentinel::findById(trim($id))) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => "User tidak ditemukan."
+            ]);
+        }
+
+        if ($updateUser->email == 'forddyce92@gmail.com') {
+            return \Response::json([
+                'type' => 'error',
+                'message' => "User tidak dapat diupdate."
+            ]);
+        }
+
+        $data = \Input::get('data');
+
+        try {
+            $user = $this->UserRepository->updateUser($updateUser, $data);
+        } catch (\Exception $e) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => $e->getMessage()
+            ]);
+        }
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => "User berhasil diupdate."
+        ]);
+    }
+
+    /**
+     * Delete User
+     * @param string $id
+     * @return json
+     */
+    public function deleteUser ($id) {
+        if (!$checkUser = \Sentinel::findById(trim($id))) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => "User tidak ditemukan."
+            ]);
+        }
+
+        if ($checkUser->email == 'forddyce92@gmail.com') {
+            return \Response::json([
+                'type' => 'error',
+                'message' => "User tidak dapat diupdate."
+            ]);
+        }
+
+        $checkUser->delete();
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => "User berhasil dihapus."
+        ]);
+    }
+}

@@ -1,2 +1,22 @@
 <?php
-namespace App\Console; use Illuminate\Console\Scheduling\Schedule; use Illuminate\Foundation\Console\Kernel as ConsoleKernel; class Kernel extends ConsoleKernel { protected $commands = array(Commands\ModuleCommand::class); protected function schedule(Schedule $sp29b7af) { } protected function commands() { require base_path('routes/console.php'); } }
+
+namespace App\Console;
+
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+
+class Kernel extends ConsoleKernel
+{
+    protected $commands = [
+        Commands\ModuleCommand::class,
+    ];
+
+    protected function schedule(Schedule $schedule)
+    {
+    }
+
+    protected function commands()
+    {
+        require base_path('routes/console.php');
+    }
+}

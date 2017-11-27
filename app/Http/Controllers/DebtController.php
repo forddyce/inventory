@@ -1,2 +1,153 @@
 <?php
-namespace App\Http\Controllers; use Illuminate\Http\Request; use App\Repositories\DebtRepository; use App\Repositories\SupplierRepository; class DebtController extends Controller { protected $DebtRepository; public function __construct(DebtRepository $sp5b5bc3) { parent::__construct(); $this->DebtRepository = $sp5b5bc3; $this->middleware('admin'); $this->middleware('admin.purchase'); } public function getList() { return $this->DebtRepository->getList(\Input::get('date_start'), \Input::get('date_end')); } public function getInvoiceList() { return $this->DebtRepository->getInvoiceList(\Input::get('date_start'), \Input::get('date_end')); } public function getDetail($sp2bf607) { if (!($sp12db67 = $this->DebtRepository->findById(trim($sp2bf607)))) { return 'Data hutang tidak ditemukan.'; } else { return view('debt.detail')->with('model', $sp12db67); } } public function getInvoiceDetail($sp2bf607) { if (!($sp12db67 = $this->DebtRepository->findInvoiceById(trim($sp2bf607)))) { return 'Data pelunasan hutang tidak ditemukan.'; } else { return view('debt.invoiceDetail')->with('model', $sp12db67); } } public function createDebt() { $sp68be9c = \Input::get('data'); if (isset($sp68be9c['is_supplier'])) { $spffe5cd = new SupplierRepository(); if (!$spffe5cd->findById(trim($sp68be9c['supplier_id']))) { return \Response::json(array('type' => 'error', 'message' => 'Data supplier tidak ditemukan.')); } $sp68be9c['is_supplier'] = true; } else { $sp68be9c['is_supplier'] = false; } $sp7612e0 = \Sentinel::getUser(); $sp68be9c['created_by'] = $sp7612e0->email; try { $sp12db67 = $this->DebtRepository->createDebt($sp68be9c); } catch (\Exception $sp118c46) { return \Response::json(array('type' => 'error', 'message' => $sp118c46->getMessage())); } return \Response::json(array('type' => 'success', 'message' => 'Data hutang telah ditambah.')); } public function editDebt($sp2bf607) { return false; } public function updateDebt($sp2bf607) { return false; } public function deleteDebt($sp2bf607) { if (!($sp12db67 = $this->DebtRepository->findById(trim($sp2bf607)))) { return \Response::json(array('type' => 'error', 'message' => 'Data hutang #{$id} tidak ditemukan.')); } $sp12db67->delete(); return \Response::json(array('type' => 'success', 'message' => 'Data hutang telah berhasil dihapus.')); } }
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Repositories\DebtRepository;
+use App\Repositories\SupplierRepository;
+
+class DebtController extends Controller
+{
+    /**
+     * The DebtRepository instance.
+     *
+     * @var \App\Repositories\DebtRepository
+     */
+    protected $DebtRepository;
+
+    /**
+     * Create a new DebtController instance.
+     *
+     * @param \App\Repositories\DebtRepository $DebtRepository
+     * @return void
+     */
+    public function __construct(
+        DebtRepository $DebtRepository
+    ) {
+        parent::__construct();
+        $this->DebtRepository = $DebtRepository;
+        $this->middleware('admin');
+        $this->middleware('admin.purchase');
+    }
+
+    /**
+     * Get datatable list
+     * @return json
+     */
+    public function getList () {
+        return $this->DebtRepository->getList(
+            \Input::get('date_start'), 
+            \Input::get('date_end')
+        );
+    }
+
+    /**
+     * Get datatable list
+     * @return json
+     */
+    public function getInvoiceList () {
+        return $this->DebtRepository->getInvoiceList(
+            \Input::get('date_start'), 
+            \Input::get('date_end')
+        );
+    }
+
+    /**
+     * Get Detail
+     * @return html
+     */
+    public function getDetail ($id) {
+        if (!$model = $this->DebtRepository->findById(trim($id))) {
+            return 'Data hutang tidak ditemukan.';
+        } else {
+            return view('debt.detail')->with('model', $model);
+        }
+    }
+
+    /**
+     * Get Invoice Detail
+     * @return html
+     */
+    public function getInvoiceDetail ($id) {
+        if (!$model = $this->DebtRepository->findInvoiceById(trim($id))) {
+            return 'Data pelunasan hutang tidak ditemukan.';
+        } else {
+            return view('debt.invoiceDetail')->with('model', $model);
+        }
+    }
+
+    /**
+     * Create the Debt
+     * @return json
+     */
+    public function createDebt () {
+        $data = \Input::get('data');
+
+        if (isset($data['is_supplier'])) {
+            $SupplierRepo = new SupplierRepository;
+            if (!$SupplierRepo->findById(trim($data['supplier_id']))) {
+                return \Response::json([
+                    'type' => 'error',
+                    'message' => 'Data supplier tidak ditemukan.'
+                ]);
+            }
+            $data['is_supplier'] = true;
+        } else $data['is_supplier'] = false;
+
+        $user = \Sentinel::getUser();
+        $data['created_by'] = $user->email;
+        
+        try {
+            $model = $this->DebtRepository->createDebt($data);
+        } catch (\Exception $e) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => $e->getMessage()
+            ]);
+        }
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => 'Data hutang telah ditambah.',
+        ]);
+    }
+
+    /**
+     * Edit debt page
+     * @param string $id
+     * @return html
+     */
+    public function editDebt ($id) {
+        return false;
+    }
+
+    /**
+     * Update Debt
+     * @param string $id
+     * @return json
+     */
+    public function updateDebt ($id) {
+        return false;
+    }
+
+    /**
+     * Delete Debt
+     * @param string $id
+     * @return json   
+     */
+    public function deleteDebt ($id) {
+        if (!$model = $this->DebtRepository->findById(trim($id))) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => 'Data hutang #{$id} tidak ditemukan.'
+            ]);
+        }
+
+        $model->delete();
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => 'Data hutang telah berhasil dihapus.'
+        ]);
+    }
+}

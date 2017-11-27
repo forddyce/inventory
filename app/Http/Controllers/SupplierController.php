@@ -1,2 +1,133 @@
 <?php
-namespace App\Http\Controllers; use Illuminate\Http\Request; use App\Repositories\SupplierRepository; class SupplierController extends Controller { protected $SupplierRepository; public function __construct(SupplierRepository $sp877a75) { parent::__construct(); $this->SupplierRepository = $sp877a75; $this->middleware('admin'); $this->middleware('admin.supplier'); } public function getList() { return $this->SupplierRepository->getList(\Input::get('date_start'), \Input::get('date_end')); } public function createSupplier() { $sp68be9c = \Input::get('data'); $sp7612e0 = \Sentinel::getUser(); $sp68be9c['created_by'] = $sp7612e0->email; try { $sp12db67 = $this->SupplierRepository->store($sp68be9c); } catch (\Exception $sp118c46) { return \Response::json(array('type' => 'error', 'message' => $sp118c46->getMessage())); } return \Response::json(array('type' => 'success', 'message' => "Supplier [{$sp12db67->supplier_name}] telah ditambah.")); } public function editSupplier($sp2bf607) { if (!($sp12db67 = $this->SupplierRepository->findById(trim($sp2bf607)))) { return redirect(route('supplier.all'))->with('flashMessage', array('class' => 'danger', 'message' => 'Data supplier tidak ditemukan.')); } return view('supplier.edit')->with('model', $sp12db67); } public function updateSupplier($sp2bf607) { if (!($sp12db67 = $this->SupplierRepository->findById(trim($sp2bf607)))) { return \Response::json(array('type' => 'error', 'message' => "Data supplier #{$sp2bf607} tidak ditemukan.")); } $sp68be9c = \Input::get('data'); try { $sp12db67 = $this->SupplierRepository->update($sp12db67, $sp68be9c); } catch (\Exception $sp118c46) { return \Response::json(array('type' => 'error', 'message' => $sp118c46->getMessage())); } return \Response::json(array('type' => 'success', 'message' => "Data supplier [{$sp12db67->supplier_name}] telah diubah.")); } public function deleteSupplier($sp2bf607) { if (!($sp12db67 = $this->SupplierRepository->findById(trim($sp2bf607)))) { return \Response::json(array('type' => 'error', 'message' => "Data supplier #{$sp2bf607} tidak ditemukan.")); } $sp12db67->delete(); return \Response::json(array('type' => 'success', 'message' => 'Data supplier telah berhasil dihapus.')); } }
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Repositories\SupplierRepository;
+
+class SupplierController extends Controller
+{
+    /**
+     * The SupplierRepository instance.
+     *
+     * @var \App\Repositories\SupplierRepository
+     */
+    protected $SupplierRepository;
+
+    /**
+     * Create a new SupplierController instance.
+     *
+     * @param \App\Repositories\SupplierRepository $SupplierRepository
+     * @return void
+     */
+    public function __construct(
+        SupplierRepository $SupplierRepository
+    ) {
+        parent::__construct();
+        $this->SupplierRepository = $SupplierRepository;
+        $this->middleware('admin');
+        $this->middleware('admin.supplier');
+    }
+
+    /**
+     * Get datatable list
+     * @return json
+     */
+    public function getList () {
+        return $this->SupplierRepository->getList(
+            \Input::get('date_start'), 
+            \Input::get('date_end')
+        );
+    }
+
+    /**
+     * Create the Supplier
+     * @return json
+     */
+    public function createSupplier () {
+        $data = \Input::get('data');
+        $user = \Sentinel::getUser();
+        $data['created_by'] = $user->email;
+
+        try {
+            $model = $this->SupplierRepository->store($data);
+        } catch (\Exception $e) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => $e->getMessage()
+            ]);
+        }
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => "Supplier [{$model->supplier_name}] telah ditambah.",
+        ]);
+    }
+
+    /**
+     * Edit Supplier page
+     * @param string $id
+     * @return html
+     */
+    public function editSupplier ($id) {
+        if (!$model = $this->SupplierRepository->findById(trim($id))) {
+            return redirect(route('supplier.all'))->with('flashMessage', [
+                'class' => 'danger',
+                'message' => 'Data supplier tidak ditemukan.'
+            ]);
+        }
+
+        return view('supplier.edit')->with('model', $model);
+    }
+
+    /**
+     * Update Supplier
+     * @param string $id
+     * @return json
+     */
+    public function updateSupplier ($id) {
+        if (!$model = $this->SupplierRepository->findById(trim($id))) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => "Data supplier #{$id} tidak ditemukan."
+            ]);
+        }
+
+        $data = \Input::get('data');
+
+        try {
+            $model = $this->SupplierRepository->update($model,  $data);
+        } catch (\Exception $e) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => $e->getMessage()
+            ]);
+        }
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => "Data supplier [{$model->supplier_name}] telah diubah.",
+        ]);
+    }
+
+    /**
+     * Delete Supplier
+     * @param string $id
+     * @return json   
+     */
+    public function deleteSupplier ($id) {
+        if (!$model = $this->SupplierRepository->findById(trim($id))) {
+            return \Response::json([
+                'type' => 'error',
+                'message' => "Data supplier #{$id} tidak ditemukan."
+            ]);
+        }
+
+        $model->delete();
+
+        return \Response::json([
+            'type' => 'success',
+            'message' => "Data supplier telah berhasil dihapus."
+        ]);
+    }
+}

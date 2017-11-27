@@ -1,2 +1,221 @@
 <?php
-namespace App\Repositories; use App\Models\Receivable; use App\Models\ReceivableInvoice; use Yajra\DataTables\Facades\DataTables; class ReceivableRepository extends BaseRepository { protected $model, $invoiceModel; public function __construct() { $this->model = new Receivable(); $this->invoiceModel = new ReceivableInvoice(); } protected function saveModel($sp12db67, $sp68be9c) { foreach ($sp68be9c as $sp22c61b => $sp75a6c8) { $sp12db67->{$sp22c61b} = $sp75a6c8; } $sp12db67->save(); return $sp12db67; } public function store($sp68be9c) { $sp12db67 = $this->saveModel(new $this->model(), $sp68be9c); return $sp12db67; } public function storeInvoice($sp68be9c) { $sp12db67 = $this->saveModel(new $this->invoiceModel(), $sp68be9c); return $sp12db67; } public function update($sp12db67, $sp68be9c) { $sp12db67 = $this->saveModel($sp12db67, $sp68be9c); return $sp12db67; } public function findInvoiceById($sp2bf607) { return $this->invoiceModel->where('id', $sp2bf607)->first(); } public function findById($sp2bf607) { return $this->model->where('id', $sp2bf607)->first(); } public function findDue($sp1114f5 = 7) { $spd78492 = \Carbon\Carbon::today()->addDays($sp1114f5); return $this->model->where('is_complete', false)->where('due_date', '<=', $spd78492)->count(); } public function findReportClient($spe1dc49, $sp32ff68, $spfd3b5a) { $sp12db67 = $this->model; if (!is_null($spfd3b5a)) { $sp12db67 = $sp12db67->where('client_id', $spfd3b5a->id); } $sp12db67 = $sp12db67->whereMonth('created_at', $spe1dc49)->whereYear('created_at', $sp32ff68)->get(); return $sp12db67; } public function getList($spe81ede = '', $sp0757f9 = '') { if ($spe81ede == '' && $sp0757f9 == '') { $spe88479 = $this->model->query(); } else { $spe88479 = $this->model; if ($spe81ede != '') { $spe88479 = $spe88479->whereDate('created_at', '>=', trim($spe81ede)); } if ($sp0757f9 != '') { $spe88479 = $spe88479->whereDate('created_at', '<=', trim($sp0757f9)); } } $sp68be9c = DataTables::eloquent($spe88479)->addColumn('action', function ($sp12db67) { return view('receivable.action')->with('model', $sp12db67); })->editColumn('amount', function ($sp12db67) { return number_format($sp12db67->amount, 0); })->editColumn('amount_left', function ($sp12db67) { return number_format($sp12db67->amount_left, 0); })->editColumn('client_name', function ($sp12db67) { if ($spfd3b5a = $sp12db67->client) { return '<a href="' . route('client.edit', array('id' => $spfd3b5a->id)) . '" target="_blank">' . $spfd3b5a->client_name . '</a>'; } else { return '<label class="label label-danger">TIDAK ADA DATA KLIEN</label>'; } })->editColumn('is_complete', function ($sp12db67) { if ($sp12db67->is_complete) { return '<span class="badge badge-success">LUNAS</span>'; } else { return '<span class="badge badge-danger">BELUM LUNAS</span>'; } })->rawColumns(array('action', 'client_name', 'is_complete'))->make(true); return $sp68be9c; } public function getInvoiceList($spe81ede = '', $sp0757f9 = '') { if ($spe81ede == '' && $sp0757f9 == '') { $spe88479 = $this->invoiceModel->query(); } else { $spe88479 = $this->invoiceModel; if ($spe81ede != '') { $spe88479 = $spe88479->whereDate('created_at', '>=', trim($spe81ede)); } if ($sp0757f9 != '') { $spe88479 = $spe88479->whereDate('created_at', '<=', trim($sp0757f9)); } } $sp68be9c = DataTables::eloquent($spe88479)->addColumn('action', function ($sp12db67) { return view('receivable.invoiceAction')->with('model', $sp12db67); })->editColumn('amount', function ($sp12db67) { return number_format($sp12db67->amount, 0); })->editColumn('amount_left', function ($sp12db67) { return number_format($sp12db67->amount_left, 0); })->editColumn('client_name', function ($sp12db67) { if ($spfd3b5a = $sp12db67->client) { return '<a href="' . route('client.edit', array('id' => $spfd3b5a->id)) . '" target="_blank">' . $spfd3b5a->client_name . '</a>'; } else { return '<label class="label label-danger">TIDAK ADA DATA client</label>'; } })->rawColumns(array('action', 'client_name'))->make(true); return $sp68be9c; } public function createReceivable($sp68be9c) { $sp93a5a3 = $sp68be9c['amount']; if ($sp68be9c['is_client']) { $spa7c286 = $this->model->where('is_complete', 0)->where('client_id', $sp68be9c['client_id'])->orderBy('created_at', 'asc')->get(); $sp5767a1 = array(); if (count($spa7c286) > 0) { foreach ($spa7c286 as $sp6a066a) { if ($sp93a5a3 > $sp6a066a->amount_left) { array_push($sp5767a1, array('receivable_id' => $sp6a066a->id, 'invoice_id' => $sp6a066a->invoice_id, 'amount' => $sp6a066a->amount_left)); $sp93a5a3 -= $sp6a066a->amount_left; $sp6a066a->amount_left = 0; $sp6a066a->is_complete = true; $sp6a066a->save(); } else { array_push($sp5767a1, array('receivable_id' => $sp6a066a->id, 'invoice_id' => $sp6a066a->invoice_id, 'amount' => $sp93a5a3)); $sp6a066a->amount_left -= $sp93a5a3; if ($sp6a066a->amount_left < 0) { $sp6a066a->amount_left = 0; } $sp93a5a3 = 0; $sp6a066a->save(); break; } } } $sp3e187e = $this->storeInvoice(array('created_by' => $sp68be9c['created_by'], 'client_id' => $sp68be9c['client_id'], 'receivable_infos' => json_encode($sp5767a1), 'other_title' => $sp68be9c['other_title'], 'other_notes' => $sp68be9c['other_notes'], 'amount' => $sp68be9c['amount'], 'amount_left' => $sp93a5a3, 'is_client' => true, 'paid_date' => $sp68be9c['paid_date'])); } else { $sp3e187e = $this->storeInvoice(array('created_by' => $sp68be9c['created_by'], 'client_id' => 0, 'receivable_infos' => null, 'other_title' => $sp68be9c['other_title'], 'other_notes' => $sp68be9c['other_notes'], 'amount' => $sp68be9c['amount'], 'amount_left' => $sp68be9c['amount'], 'is_client' => false, 'paid_date' => $sp68be9c['paid_date'])); } return $sp3e187e; } }
+
+namespace App\Repositories;
+
+use App\Models\Receivable;
+use App\Models\ReceivableInvoice;
+use Yajra\DataTables\Facades\DataTables;
+
+class ReceivableRepository extends BaseRepository
+{
+    protected $model, $invoiceModel;
+
+    public function __construct() {
+        $this->model = new Receivable;
+        $this->invoiceModel = new ReceivableInvoice;
+    }
+
+    protected function saveModel($model, $data) {
+        foreach ($data as $k=>$d) {
+            $model->{$k} = $d;
+        }
+        $model->save();
+        return $model;
+    }
+
+    public function store($data) {
+        $model = $this->saveModel(new $this->model, $data);
+        return $model;
+    }
+
+    public function storeInvoice($data) {
+        $model = $this->saveModel(new $this->invoiceModel, $data);
+        return $model;
+    }
+
+    public function update($model, $data) {
+        $model = $this->saveModel($model, $data);
+        return $model;
+    }
+
+    public function findInvoiceById ($id) {
+        return $this->invoiceModel->where('id', $id)->first();
+    }
+
+    public function findById ($id) {
+        return $this->model->where('id', $id)->first();
+    }
+
+    public function findDue ($days=7) {
+        $date = \Carbon\Carbon::today()->addDays($days);
+        return $this->model->where('is_complete', false)->where('due_date', '<=', $date)->count();
+    }
+
+    /**
+     * [findReportClient description]
+     * @param integer $month
+     * @param integer $year
+     * @param App\Models\Client $client
+     * @return json
+     */
+    public function findReportClient ($month, $year, $client) {
+        $model = $this->model;
+
+        if (!is_null($client)) {
+            $model = $model->where('client_id', $client->id);
+        }
+                    
+        $model = $model->whereMonth('created_at', $month)
+                    ->whereYear('created_at', $year)
+                    ->get();
+
+        return $model;
+    }
+
+    public function getList ($from='', $to='') {
+        if ($from == '' && $to == '') {
+            $query = $this->model->query();
+        } else {
+            $query = $this->model;
+            if ($from != '') {
+                $query = $query->whereDate('created_at', '>=', trim($from));
+            }
+            if ($to != '') {
+                $query = $query->whereDate('created_at', '<=', trim($to));
+            }
+        }
+        $data = DataTables::eloquent($query)
+                ->addColumn('action', function ($model) {
+                    return view('receivable.action')->with('model', $model);
+                })
+                ->editColumn('amount', function ($model) {
+                    return number_format($model->amount, 0);
+                })
+                ->editColumn('amount_left', function ($model) {
+                    return number_format($model->amount_left, 0);
+                })
+                ->editColumn('client_name', function ($model) {
+                    if ($client = $model->client) {
+                        return '<a href="' . route('client.edit', ['id' => $client->id ]) . '" target="_blank">' . $client->client_name . '</a>';
+                    } else {
+                        return '<label class="label label-danger">TIDAK ADA DATA KLIEN</label>';
+                    }
+                })
+                ->editColumn('is_complete', function ($model) {
+                    if ($model->is_complete) {
+                        return '<span class="badge badge-success">LUNAS</span>';
+                    } else {
+                        return '<span class="badge badge-danger">BELUM LUNAS</span>';
+                    }
+                })
+                ->rawColumns(['action', 'client_name', 'is_complete'])
+                ->make(true);
+        return $data;
+    }
+
+    public function getInvoiceList ($from='', $to='') {
+        if ($from == '' && $to == '') {
+            $query = $this->invoiceModel->query();
+        } else {
+            $query = $this->invoiceModel;
+            if ($from != '') {
+                $query = $query->whereDate('created_at', '>=', trim($from));
+            }
+            if ($to != '') {
+                $query = $query->whereDate('created_at', '<=', trim($to));
+            }
+        }
+        $data = DataTables::eloquent($query)
+                ->addColumn('action', function ($model) {
+                    return view('receivable.invoiceAction')->with('model', $model);
+                })
+                ->editColumn('amount', function ($model) {
+                    return number_format($model->amount, 0);
+                })
+                ->editColumn('amount_left', function ($model) {
+                    return number_format($model->amount_left, 0);
+                })
+                ->editColumn('client_name', function ($model) {
+                    if ($client = $model->client) {
+                        return '<a href="' . route('client.edit', ['id' => $client->id ]) . '" target="_blank">' . $client->client_name . '</a>';
+                    } else {
+                        return '<label class="label label-danger">TIDAK ADA DATA client</label>';
+                    }
+                })
+                ->rawColumns(['action', 'client_name'])
+                ->make(true);
+        return $data;
+    }
+
+    /**
+     * [createReceivable description]
+     * @param array $data
+     * @return App\Models\ReceivableInvoice
+     */
+    public function createReceivable ($data) {
+        $amountLeft = $data['amount'];
+
+        if ($data['is_client']) { // process client receivable
+            $receivablesLeft = $this->model->where('is_complete', 0)
+            ->where('client_id', $data['client_id'])
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+            $infos = [];
+
+            if (count($receivablesLeft) > 0) {
+                foreach ($receivablesLeft as $receivable) {
+                    if ($amountLeft > $receivable->amount_left) {
+                        array_push($infos, [
+                            'receivable_id' => $receivable->id,
+                            'invoice_id' => $receivable->invoice_id,
+                            'amount' => $receivable->amount_left
+                        ]);
+                        $amountLeft -= $receivable->amount_left;
+                        $receivable->amount_left = 0;
+                        $receivable->is_complete = true;
+                        $receivable->save();
+                    } else {
+                        array_push($infos, [
+                            'receivable_id' => $receivable->id,
+                            'invoice_id' => $receivable->invoice_id,
+                            'amount' => $amountLeft
+                        ]);
+                        $receivable->amount_left -= $amountLeft;
+                        if ($receivable->amount_left < 0) $receivable->amount_left = 0; // unlikely
+                        $amountLeft = 0;
+                        $receivable->save();
+                        break;
+                    }
+                }
+            }
+
+            $invoiceModel = $this->storeInvoice([
+                'created_by' => $data['created_by'],
+                'client_id' => $data['client_id'],
+                'receivable_infos' => json_encode($infos),
+                'other_title' => $data['other_title'],
+                'other_notes' => $data['other_notes'],
+                'amount' => $data['amount'],
+                'amount_left' => $amountLeft,
+                'is_client' => true,
+                'paid_date' => $data['paid_date']
+            ]);
+        } else {
+            $invoiceModel = $this->storeInvoice([
+                'created_by' => $data['created_by'],
+                'client_id' => 0,
+                'receivable_infos' => null,
+                'other_title' => $data['other_title'],
+                'other_notes' => $data['other_notes'],
+                'amount' => $data['amount'],
+                'amount_left' => $data['amount'],
+                'is_client' => false,
+                'paid_date' => $data['paid_date']
+            ]);
+        }
+
+        return $invoiceModel;
+    }
+
+}

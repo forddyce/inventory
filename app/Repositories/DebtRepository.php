@@ -1,2 +1,204 @@
 <?php
-namespace App\Repositories; use App\Models\Debt; use App\Models\DebtInvoice; use Yajra\DataTables\Facades\DataTables; class DebtRepository extends BaseRepository { protected $model, $invoiceModel; public function __construct() { $this->model = new Debt(); $this->invoiceModel = new DebtInvoice(); } protected function saveModel($sp12db67, $sp68be9c) { foreach ($sp68be9c as $sp22c61b => $sp75a6c8) { $sp12db67->{$sp22c61b} = $sp75a6c8; } $sp12db67->save(); return $sp12db67; } public function store($sp68be9c) { $sp12db67 = $this->saveModel(new $this->model(), $sp68be9c); return $sp12db67; } public function storeInvoice($sp68be9c) { $sp12db67 = $this->saveModel(new $this->invoiceModel(), $sp68be9c); return $sp12db67; } public function update($sp12db67, $sp68be9c) { $sp12db67 = $this->saveModel($sp12db67, $sp68be9c); return $sp12db67; } public function findInvoiceById($sp2bf607) { return $this->invoiceModel->where('id', $sp2bf607)->first(); } public function findById($sp2bf607) { return $this->model->where('id', $sp2bf607)->first(); } public function findDue($sp1114f5 = 7) { $spd78492 = \Carbon\Carbon::today()->addDays($sp1114f5); return $this->model->where('is_complete', false)->where('due_date', '<=', $spd78492)->count(); } public function getList($spe81ede = '', $sp0757f9 = '') { if ($spe81ede == '' && $sp0757f9 == '') { $spe88479 = $this->model->query(); } else { $spe88479 = $this->model; if ($spe81ede != '') { $spe88479 = $spe88479->whereDate('created_at', '>=', trim($spe81ede)); } if ($sp0757f9 != '') { $spe88479 = $spe88479->whereDate('created_at', '<=', trim($sp0757f9)); } } $sp68be9c = DataTables::eloquent($spe88479)->addColumn('action', function ($sp12db67) { return view('debt.action')->with('model', $sp12db67); })->editColumn('amount', function ($sp12db67) { return number_format($sp12db67->amount, 0); })->editColumn('amount_left', function ($sp12db67) { return number_format($sp12db67->amount_left, 0); })->editColumn('supplier_name', function ($sp12db67) { if ($spdf551d = $sp12db67->supplier) { return '<a href="' . route('supplier.edit', array('id' => $spdf551d->id)) . '" target="_blank">' . $spdf551d->supplier_name . '</a>'; } else { return '<label class="label label-danger">TIDAK ADA DATA SUPPLIER</label>'; } })->editColumn('is_complete', function ($sp12db67) { if ($sp12db67->is_complete) { return '<span class="badge badge-success">LUNAS</span>'; } else { return '<span class="badge badge-danger">BELUM LUNAS</span>'; } })->rawColumns(array('action', 'supplier_name', 'is_complete'))->make(true); return $sp68be9c; } public function getInvoiceList($spe81ede = '', $sp0757f9 = '') { if ($spe81ede == '' && $sp0757f9 == '') { $spe88479 = $this->invoiceModel->query(); } else { $spe88479 = $this->invoiceModel; if ($spe81ede != '') { $spe88479 = $spe88479->whereDate('created_at', '>=', trim($spe81ede)); } if ($sp0757f9 != '') { $spe88479 = $spe88479->whereDate('created_at', '<=', trim($sp0757f9)); } } $sp68be9c = DataTables::eloquent($spe88479)->addColumn('action', function ($sp12db67) { return view('debt.invoiceAction')->with('model', $sp12db67); })->editColumn('amount', function ($sp12db67) { return number_format($sp12db67->amount, 0); })->editColumn('amount_left', function ($sp12db67) { return number_format($sp12db67->amount_left, 0); })->editColumn('supplier_name', function ($sp12db67) { if ($spdf551d = $sp12db67->supplier) { return '<a href="' . route('supplier.edit', array('id' => $spdf551d->id)) . '" target="_blank">' . $spdf551d->supplier_name . '</a>'; } else { return '<label class="label label-danger">TIDAK ADA DATA SUPPLIER</label>'; } })->rawColumns(array('action', 'supplier_name'))->make(true); return $sp68be9c; } public function createDebt($sp68be9c) { $sp93a5a3 = $sp68be9c['amount']; if ($sp68be9c['is_supplier']) { $spcd96b5 = $this->model->where('is_complete', 0)->where('supplier_id', $sp68be9c['supplier_id'])->orderBy('created_at', 'asc')->get(); $sp5767a1 = array(); if (count($spcd96b5) > 0) { foreach ($spcd96b5 as $sp4cd214) { if ($sp93a5a3 > $sp4cd214->amount_left) { array_push($sp5767a1, array('debt_id' => $sp4cd214->id, 'invoice_id' => $sp4cd214->invoice_id, 'amount' => $sp4cd214->amount_left)); $sp93a5a3 -= $sp4cd214->amount_left; $sp4cd214->amount_left = 0; $sp4cd214->is_complete = true; if ($sp9e9a85 = $sp4cd214->purchase) { $sp9e9a85->is_complete = true; $sp9e9a85->save(); } $sp4cd214->save(); } else { array_push($sp5767a1, array('debt_id' => $sp4cd214->id, 'invoice_id' => $sp4cd214->invoice_id, 'amount' => $sp93a5a3)); $sp4cd214->amount_left -= $sp93a5a3; if ($sp4cd214->amount_left < 0) { $sp4cd214->amount_left = 0; } $sp93a5a3 = 0; $sp4cd214->save(); break; } } } $sp3e187e = $this->storeInvoice(array('created_by' => $sp68be9c['created_by'], 'supplier_id' => $sp68be9c['supplier_id'], 'debt_infos' => json_encode($sp5767a1), 'other_title' => $sp68be9c['other_title'], 'other_notes' => $sp68be9c['other_notes'], 'amount' => $sp68be9c['amount'], 'amount_left' => $sp93a5a3, 'is_supplier' => true, 'paid_date' => $sp68be9c['paid_date'])); } else { $sp3e187e = $this->storeInvoice(array('created_by' => $sp68be9c['created_by'], 'supplier_id' => 0, 'debt_infos' => null, 'other_title' => $sp68be9c['other_title'], 'other_notes' => $sp68be9c['other_notes'], 'amount' => $sp68be9c['amount'], 'amount_left' => $sp68be9c['amount'], 'is_supplier' => false, 'paid_date' => $sp68be9c['paid_date'])); } return $sp3e187e; } }
+
+namespace App\Repositories;
+
+use App\Models\Debt;
+use App\Models\DebtInvoice;
+use Yajra\DataTables\Facades\DataTables;
+
+class DebtRepository extends BaseRepository
+{
+    protected $model, $invoiceModel;
+
+    public function __construct() {
+        $this->model = new Debt;
+        $this->invoiceModel = new DebtInvoice;
+    }
+
+    protected function saveModel($model, $data) {
+        foreach ($data as $k=>$d) {
+            $model->{$k} = $d;
+        }
+        $model->save();
+        return $model;
+    }
+
+    public function store($data) {
+        $model = $this->saveModel(new $this->model, $data);
+        return $model;
+    }
+
+    public function storeInvoice($data) {
+        $model = $this->saveModel(new $this->invoiceModel, $data);
+        return $model;
+    }
+
+    public function update($model, $data) {
+        $model = $this->saveModel($model, $data);
+        return $model;
+    }
+
+    public function findInvoiceById ($id) {
+        return $this->invoiceModel->where('id', $id)->first();
+    }
+
+    public function findById ($id) {
+        return $this->model->where('id', $id)->first();
+    }
+
+    public function findDue ($days=7) {
+        $date = \Carbon\Carbon::today()->addDays($days);
+        return $this->model->where('is_complete', false)->where('due_date', '<=', $date)->count();
+    }
+
+    public function getList ($from='', $to='') {
+        if ($from == '' && $to == '') {
+            $query = $this->model->query();
+        } else {
+            $query = $this->model;
+            if ($from != '') {
+                $query = $query->whereDate('created_at', '>=', trim($from));
+            }
+            if ($to != '') {
+                $query = $query->whereDate('created_at', '<=', trim($to));
+            }
+        }
+        $data = DataTables::eloquent($query)
+                ->addColumn('action', function ($model) {
+                    return view('debt.action')->with('model', $model);
+                })
+                ->editColumn('amount', function ($model) {
+                    return number_format($model->amount, 0);
+                })
+                ->editColumn('amount_left', function ($model) {
+                    return number_format($model->amount_left, 0);
+                })
+                ->editColumn('supplier_name', function ($model) {
+                    if ($supplier = $model->supplier) {
+                        return '<a href="' . route('supplier.edit', ['id' => $supplier->id ]) . '" target="_blank">' . $supplier->supplier_name . '</a>';
+                    } else {
+                        return '<label class="label label-danger">TIDAK ADA DATA SUPPLIER</label>';
+                    }
+                })
+                ->editColumn('is_complete', function ($model) {
+                    if ($model->is_complete) {
+                        return '<span class="badge badge-success">LUNAS</span>';
+                    } else {
+                        return '<span class="badge badge-danger">BELUM LUNAS</span>';
+                    }
+                })
+                ->rawColumns(['action', 'supplier_name', 'is_complete'])
+                ->make(true);
+        return $data;
+    }
+
+    public function getInvoiceList ($from='', $to='') {
+        if ($from == '' && $to == '') {
+            $query = $this->invoiceModel->query();
+        } else {
+            $query = $this->invoiceModel;
+            if ($from != '') {
+                $query = $query->whereDate('created_at', '>=', trim($from));
+            }
+            if ($to != '') {
+                $query = $query->whereDate('created_at', '<=', trim($to));
+            }
+        }
+        $data = DataTables::eloquent($query)
+                ->addColumn('action', function ($model) {
+                    return view('debt.invoiceAction')->with('model', $model);
+                })
+                ->editColumn('amount', function ($model) {
+                    return number_format($model->amount, 0);
+                })
+                ->editColumn('amount_left', function ($model) {
+                    return number_format($model->amount_left, 0);
+                })
+                ->editColumn('supplier_name', function ($model) {
+                    if ($supplier = $model->supplier) {
+                        return '<a href="' . route('supplier.edit', ['id' => $supplier->id ]) . '" target="_blank">' . $supplier->supplier_name . '</a>';
+                    } else {
+                        return '<label class="label label-danger">TIDAK ADA DATA SUPPLIER</label>';
+                    }
+                })
+                ->rawColumns(['action', 'supplier_name'])
+                ->make(true);
+        return $data;
+    }
+
+    /**
+     * [createDebt description]
+     * @param array $data
+     * @return App\Models\DebtInvoice
+     */
+    public function createDebt ($data) {
+        $amountLeft = $data['amount'];
+
+        if ($data['is_supplier']) { // process supplier debt
+            $debtsLeft = $this->model->where('is_complete', 0)
+            ->where('supplier_id', $data['supplier_id'])
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+            $infos = [];
+
+            if (count($debtsLeft) > 0) {
+                foreach ($debtsLeft as $debt) {
+                    if ($amountLeft > $debt->amount_left) {
+                        array_push($infos, [
+                            'debt_id' => $debt->id,
+                            'invoice_id' => $debt->invoice_id,
+                            'amount' => $debt->amount_left
+                        ]);
+                        $amountLeft -= $debt->amount_left;
+                        $debt->amount_left = 0;
+                        $debt->is_complete = true;
+                        if ($purchase = $debt->purchase) {
+                            $purchase->is_complete = true;
+                            $purchase->save();
+                        }
+                        $debt->save();
+                    } else {
+                        array_push($infos, [
+                            'debt_id' => $debt->id,
+                            'invoice_id' => $debt->invoice_id,
+                            'amount' => $amountLeft
+                        ]);
+                        $debt->amount_left -= $amountLeft;
+                        if ($debt->amount_left < 0) $debt->amount_left = 0; // unlikely
+                        $amountLeft = 0;
+                        $debt->save();
+                        break;
+                    }
+                }
+            }
+
+            $invoiceModel = $this->storeInvoice([
+                'created_by' => $data['created_by'],
+                'supplier_id' => $data['supplier_id'],
+                'debt_infos' => json_encode($infos),
+                'other_title' => $data['other_title'],
+                'other_notes' => $data['other_notes'],
+                'amount' => $data['amount'],
+                'amount_left' => $amountLeft,
+                'is_supplier' => true,
+                'paid_date' => $data['paid_date']
+            ]);
+        } else {
+            $invoiceModel = $this->storeInvoice([
+                'created_by' => $data['created_by'],
+                'supplier_id' => 0,
+                'debt_infos' => null,
+                'other_title' => $data['other_title'],
+                'other_notes' => $data['other_notes'],
+                'amount' => $data['amount'],
+                'amount_left' => $data['amount'],
+                'is_supplier' => false,
+                'paid_date' => $data['paid_date']
+            ]);
+        }
+
+        return $invoiceModel;
+    }
+
+}

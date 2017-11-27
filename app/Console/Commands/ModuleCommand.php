@@ -1,2 +1,108 @@
 <?php
-namespace App\Console\Commands; use Illuminate\Console\Command; class ModuleCommand extends Command { protected $signature = 'module:make {module}'; protected $description = 'Make a module'; public function __construct() { parent::__construct(); } public function handle() { $sp7d6d7c = $this->argument('module'); if ($sp7d6d7c == '') { $this->error('Parameter empty!'); return false; } $this->generateModel($sp7d6d7c); $this->generateRepository($sp7d6d7c); $this->generateController($sp7d6d7c); $this->info('Module generated!'); } public function generateModel($sp7d6d7c) { $sp3e29aa = ucwords($sp7d6d7c); $spc48ff6 = app_path() . '/Models/' . $sp3e29aa . '.php'; try { $sp70dad2 = \File::get(app_path() . '/Boilerplate/Model.php'); } catch (Illuminate\Filesystem\FileNotFoundException $sp152bb1) { $this->error('Cannot generate Model file !'); } $sp85832f = str_replace('Sample', $sp3e29aa, $sp70dad2); \File::put($spc48ff6, $sp85832f); $this->info('Model generated!'); \Artisan::call('make:migration', array('name' => 'create_' . $sp3e29aa . '_table')); $this->info('Migration generated!'); } public function generateRepository($sp7d6d7c) { $sp3e29aa = ucwords($sp7d6d7c); $spc48ff6 = app_path() . '/Repositories/' . $sp3e29aa . 'Repository.php'; try { $sp70dad2 = \File::get(app_path() . '/Boilerplate/Repository.php'); } catch (Illuminate\Filesystem\FileNotFoundException $sp152bb1) { $this->error('Cannot generate Repository file !'); } $sp85832f = str_replace('Sample', $sp3e29aa, $sp70dad2); \File::put($spc48ff6, $sp85832f); $this->info('Repository generated!'); } public function generateController($sp7d6d7c) { $sp3e29aa = ucwords($sp7d6d7c); $spc48ff6 = app_path() . '/Http/Controllers/' . $sp3e29aa . 'Controller.php'; try { $sp70dad2 = \File::get(app_path() . '/Boilerplate/Controller.php'); } catch (Illuminate\Filesystem\FileNotFoundException $sp152bb1) { $this->error('Cannot generate Controller file !'); } $sp85832f = str_replace('Sample', $sp3e29aa, $sp70dad2); \File::put($spc48ff6, $sp85832f); $this->info('Controller generated!'); } }
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+
+class ModuleCommand extends Command
+{
+	/**
+	 * The name and signature of the console command.
+	 *
+	 * @var string
+	 */
+	protected $signature = 'module:make {module}';
+
+	/**
+	 * The console command description.
+	 *
+	 * @var string
+	 */
+	protected $description = 'Make a module';
+
+	/**
+	 * Create a new command instance.
+	 *
+	 * @return void
+	 */
+	public function __construct()
+	{
+		parent::__construct();
+	}
+
+	/**
+	 * Execute the console command.
+	 *
+	 * @return mixed
+	 */
+	public function handle()
+	{
+		$module = $this->argument('module');
+
+		if ($module == '') {
+			$this->error('Parameter empty!');
+			return false;
+		}
+
+		$this->generateModel($module);
+		$this->generateRepository($module);
+		$this->generateController($module);
+
+		$this->info('Module generated!');
+	}
+
+	public function generateModel($module) {
+		$moduleName = ucwords($module);
+		$path = app_path() . '/Models/' . $moduleName . '.php';
+
+		try {
+			$contents = \File::get(app_path() . '/Boilerplate/Model.php');
+		}
+		catch (Illuminate\Filesystem\FileNotFoundException $exception) {
+			$this->error('Cannot generate Model file !');
+		}
+
+		$content = str_replace('Sample', $moduleName, $contents);
+		\File::put($path, $content);
+
+		$this->info('Model generated!');
+
+		\Artisan::call('make:migration', ['name' => 'create_' . $moduleName . '_table']);
+
+		$this->info('Migration generated!');
+	}
+
+	public function generateRepository($module) {
+		$moduleName = ucwords($module);
+		$path = app_path() . '/Repositories/' . $moduleName . 'Repository.php';
+
+		try {
+			$contents = \File::get(app_path() . '/Boilerplate/Repository.php');
+		}
+		catch (Illuminate\Filesystem\FileNotFoundException $exception) {
+			$this->error('Cannot generate Repository file !');
+		}
+
+		$content = str_replace('Sample', $moduleName, $contents);
+		\File::put($path, $content);
+
+		$this->info('Repository generated!');
+	}
+
+	public function generateController($module) {
+		$moduleName = ucwords($module);
+		$path = app_path() . '/Http/Controllers/' . $moduleName . 'Controller.php';
+
+		try {
+			$contents = \File::get(app_path() . '/Boilerplate/Controller.php');
+		}
+		catch (Illuminate\Filesystem\FileNotFoundException $exception) {
+			$this->error('Cannot generate Controller file !');
+		}
+
+		$content = str_replace('Sample', $moduleName, $contents);
+		\File::put($path, $content);
+
+		$this->info('Controller generated!');
+	}
+}
