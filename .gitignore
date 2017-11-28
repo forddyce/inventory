@@ -1,11 +1,8 @@
 /node_modules
 /vendor
 /.idea
-.env
 /gulp
 gulpfile.js
 /plugins
 /resources/assets
 notes.txt
-_app
-_routes
