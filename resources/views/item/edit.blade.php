@@ -64,14 +64,14 @@ Edit {{ $model->item_name }} - {{ config('app.name') }}
                     </div>
                   </div>
 
-                  <div class="form-group row">
+                  {{-- <div class="form-group row">
                     <div class="col-md-9">
                       <div class="form-material floating">
                         <input type="number" step="any" class="form-control" id="inputItemStock" name="stock" required="" value="{{ $model->stock }}" min="0">
                         <label for="inputItemStock">Stok</label>
                       </div>
                     </div>
-                  </div>
+                  </div> --}}
 
                   <div class="form-group row">
                     <div class="col-md-9">

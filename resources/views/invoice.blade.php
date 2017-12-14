@@ -78,7 +78,7 @@
       border-collapse: collapse;
       border-spacing: 0;
       margin-bottom: 20px;
-    }  
+    }
 
     table th {
       padding: 5px;
@@ -87,6 +87,57 @@
       white-space: nowrap;        
       font-weight: normal;
       text-align: left;
+      font-weight: 700;
+    }
+
+    table tr.blue {
+      background-color: #454f96;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    table tr.blue th {
+      background-color: #454f96;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    table tr.blue a {
+      color: #fff;
+      font-weight: 700;
+    }
+
+    table tr.green {
+      background-color: #2f713a;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    table tr.green th {
+      background-color: #2f713a;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    table tr.green a {
+      color: #fff;
+      font-weight: 700;
+    }
+
+    table tr.red {
+      background-color: red;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    table tr.red th {
+      background-color: red;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    table tr.red a {
+      color: #fff;
       font-weight: 700;
     }
 

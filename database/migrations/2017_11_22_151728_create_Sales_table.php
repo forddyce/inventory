@@ -29,6 +29,17 @@ class CreateSalesTable extends Migration
             $table->index('invoice_id');
             $table->engine = 'InnoDB';
         });
+
+        Schema::create('Sales_ItemPurchase_History', function (Blueprint $table) {
+            $table->increments('id');
+            $table->unsignedInteger('sales_id');
+            $table->unsignedInteger('history_id');
+            $table->unsignedInteger('item_id');
+            $table->unsignedInteger('quantity_used');
+            $table->timestamps();
+
+            $table->index(['sales_id', 'history_id']);
+        });
     }
 
     /**
@@ -38,6 +49,7 @@ class CreateSalesTable extends Migration
      */
     public function down()
     {
+        Schema::dropIfExists('Sales_ItemPurchase_History');
         Schema::dropIfExists('Sales');
     }
 }

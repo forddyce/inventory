@@ -36,6 +36,7 @@ class CreateItemTable extends Migration
             $table->unsignedInteger('item_id')->default(0);
             $table->unsignedInteger('purchase_id')->default(0);
             $table->unsignedInteger('quantity')->default(1);
+            $table->unsignedInteger('quantity_left')->default(1);
             $table->string('invoice_id', 255)->nullable();
             $table->decimal('unit_price', 16, 4)->default(0);
             $table->decimal('price', 16, 4)->default(0);

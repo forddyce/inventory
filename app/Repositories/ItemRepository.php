@@ -137,6 +137,7 @@ class ItemRepository extends BaseRepository
         $model->purchase_id = $purchaseModel->id;
         $model->invoice_id = $purchaseModel->invoice_id;
         $model->quantity = $data['quantity'];
+        $model->quantity_left = $data['quantity'];
         $model->unit_price = $data['price'];
         $model->price = $data['price'] * $data['quantity'];
         $model->discount = $data['discount'];

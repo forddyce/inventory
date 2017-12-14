@@ -165,11 +165,11 @@ class ItemController extends Controller
             }
         }
 
-        $purchaseModels = $this->ItemRepository->findReportPurchase(
-            trim(\Input::get('month')),
-            trim(\Input::get('year')),
-            $item
-        );
+        // $purchaseModels = $this->ItemRepository->findReportPurchase(
+        //     trim(\Input::get('month')),
+        //     trim(\Input::get('year')),
+        //     $item
+        // );
 
         $salesModels = $this->ItemRepository->findReportSales(
             trim(\Input::get('month')),
@@ -178,7 +178,7 @@ class ItemController extends Controller
         );
 
         return view('item.reportProfitDetail')->with('data', [
-            'purchase' => $purchaseModels,
+            // 'purchase' => $purchaseModels,
             'sales' => $salesModels
         ]);
     }

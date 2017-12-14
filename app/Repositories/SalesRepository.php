@@ -3,14 +3,17 @@
 namespace App\Repositories;
 
 use App\Models\Sales;
+use App\Models\SalesPurchaseHistory;
 use Yajra\DataTables\Facades\DataTables;
 
 class SalesRepository extends BaseRepository
 {
     protected $model;
+    protected $historyModel;
 
     public function __construct() {
         $this->model = new Sales;
+        $this->historyModel = new SalesPurchaseHistory;
     }
 
     protected function saveModel($model, $data) {
@@ -115,6 +118,53 @@ class SalesRepository extends BaseRepository
                 ->rawColumns(['is_complete', 'action', 'client'])
                 ->make(true);
         return $data;
+    }
+
+    /**
+     * [processPurchaseHistory description]
+     * @param  [type] $data       [description]
+     * @param  [type] $itemModel  [description]
+     * @param  [type] $salesModel [description]
+     * @return [type]             [description]
+     */
+    public function processPurchaseHistory ($data, $itemModel, $model) {
+        $itemPurchasesModel = new \App\Models\ItemPurchaseHistory;
+
+        $itemPurchases = $itemPurchasesModel
+                            ->where('item_id', $itemModel->id)
+                            ->where('quantity_left', '>', 0)
+                            ->orderBy('created_at', 'asc')
+                            ->get();
+
+        $quantityLeft = $data['quantity'];
+
+        if (count($itemPurchases) > 0) {
+            foreach ($itemPurchases as $item) {
+                $history = new $this->historyModel;
+                $history->sales_id = $model->id;
+                $history->item_id = $itemModel->id;
+                $history->history_id = $item->id;
+                
+                if ($quantityLeft > $item->quantity_left) {
+                    $history->quantity_used = $item->quantity_left;
+                    $quantityLeft -= $item->quantity_left;
+                    $item->quantity_left = 0;
+                } else {
+                    $history->quantity_used = $quantityLeft;
+                    $item->quantity_left -= $quantityLeft;
+                    $quantityLeft = 0;
+                }
+
+                if ($item->quantity_left < 0) $item->quantity_left = 0;
+                $item->save();
+
+                if ($history->quantity_used > 0) {
+                    $history->save();
+                }
+            }
+        }
+
+        return true;
     }
 
 }

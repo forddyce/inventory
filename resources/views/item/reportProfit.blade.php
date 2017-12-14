@@ -30,7 +30,7 @@ Laporan Per Item - {{ config('app.name') }}
                     <div class="col-md-9">
                       <div class="form-material">
                         <select class="form-control js-select2" style="width: 100%;" data-placeholder="Choose one.." name="item_id" id="inputItemPurchase">
-                          <option value="0">-- Semua Item --</option>
+                          {{-- <option value="0">-- Semua Item --</option> --}}
                           @if (count($items) > 0)
                           @foreach ($items as $item)
                           <option value="{{ $item->id }}">{{ $item->item_name }}</option>

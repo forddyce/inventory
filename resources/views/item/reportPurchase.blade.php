@@ -23,6 +23,7 @@ Pembelian item PERIODE {{ \Input::get('month') . '-' . \Input::get('year') }}
       <th class="bt">NAMA ITEM</th>
       <th class="bt">INVOICE</th>
       <th class="bt">QTY</th>
+      <th class="bt">SISA</th>
       <th class="bt">HARGA SATUAN</th>
       <th class="bt">HARGA</th>
       <th class="bt">DISKON</th>
@@ -45,8 +46,10 @@ Pembelian item PERIODE {{ \Input::get('month') . '-' . \Input::get('year') }}
       <td><a href="{{ route('purchase.invoice.print', ['id' => $model->purchase_id]) }}" target="_blank">{{ $model->invoice_id }}</a></td>
       @if ($item)
         <td>{{ $model->quantity . ' ' . $item->item_unit }}</td>
+        <td>{{ $model->quantity_left . ' ' . $item->item_unit }}</td>
       @else
         <td>{{ $model->quantity }}</td>
+        <td>{{ $model->quantity_left }}</td>
       @endif
       <td>{{ number_format($model->unit_price, 0) }}</td>
       <td>{{ number_format($model->price, 0) }}</td>
@@ -66,7 +69,7 @@ Pembelian item PERIODE {{ \Input::get('month') . '-' . \Input::get('year') }}
     @endif
 
     <tr>
-      <td class="grand total" colspan="6" align="right">
+      <td class="grand total" colspan="7" align="right">
         <strong>TOTAL</strong>
       </td>
       <td class="grand total">

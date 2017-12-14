@@ -166,6 +166,7 @@ class SalesController extends Controller
         foreach ($itemData as $id) {
             $item = $id['item'];
             $item->save();
+            $this->SalesRepository->processPurchaseHistory($id['sales_data'], $item, $model);
             $itemRepo->addSalesHistory($id['sales_data'], $item, $model);
         }
 
