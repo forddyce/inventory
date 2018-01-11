@@ -39,18 +39,20 @@ Semua Biaya - {{ config('app.name') }}
             </div>
 
             <div class="block-content block-content-full">
-              <table class="table table-bordered table-striped table-vcenter js-dataTable-full table-grid" data-url="{{ route('expense.list') }}">
-                <thead>
-                  <tr>
-                    <th data-id="created_at">Tanggal Dibuat</th>
-                    <th data-id="created_by">Dibuat Oleh</th>
-                    <th data-id="expense_name">Nama</th>
-                    <th data-id="amount">Jumlah</th>
-                    <th data-id="action" data-sortable="false" data-searchable="false"></th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
+              <div class="table-responsive">
+                <table class="table table-bordered table-striped table-vcenter js-dataTable-full table-grid" data-url="{{ route('expense.list') }}">
+                  <thead>
+                    <tr>
+                      <th data-id="created_at">Tanggal Dibuat</th>
+                      <th data-id="created_by">Dibuat Oleh</th>
+                      <th data-id="expense_name">Nama</th>
+                      <th data-id="amount">Jumlah</th>
+                      <th data-id="action" data-sortable="false" data-searchable="false"></th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>

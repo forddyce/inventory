@@ -40,21 +40,23 @@ Semua Hutang - {{ config('app.name') }}
             </div>
 
             <div class="block-content block-content-full">
-              <table class="table table-bordered table-striped table-vcenter js-dataTable-full table-grid" data-url="{{ route('debt.list') }}">
-                <thead>
-                  <tr>
-                    <th data-id="created_at">Tanggal Dibuat</th>
-                    <th data-id="created_by">Dibuat Oleh</th>
-                    <th data-id="due_date">Jatuh Tempo</th>
-                    <th data-id="is_complete">Status</th>
-                    <th data-id="amount">Jumlah</th>
-                    <th data-id="amount_left">Sisa</th>
-                    <th data-id="supplier_name" data-sortable="false" data-searchable="false">Supplier</th>
-                    <th data-id="action" data-sortable="false" data-searchable="false"></th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
+              <div class="table-responsive">
+                <table class="table table-bordered table-striped table-vcenter js-dataTable-full table-grid" data-url="{{ route('debt.list') }}">
+                  <thead>
+                    <tr>
+                      <th data-id="created_at">Tanggal Dibuat</th>
+                      <th data-id="created_by">Dibuat Oleh</th>
+                      <th data-id="due_date">Jatuh Tempo</th>
+                      <th data-id="is_complete">Status</th>
+                      <th data-id="amount">Jumlah</th>
+                      <th data-id="amount_left">Sisa</th>
+                      <th data-id="supplier_name" data-sortable="false" data-searchable="false">Supplier</th>
+                      <th data-id="action" data-sortable="false" data-searchable="false"></th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>

@@ -62,7 +62,7 @@ Laporan Pembelian Per Supplier - {{ config('app.name') }}
                         <?php $currentYear = date('Y'); ?>
                         <select class="form-control" name="year">
                           <option value="{{ $currentYear }}" selected="">{{ $currentYear }}</option>
-                          @for ($i = 0; $i < 5; $i++)
+                          @for ($i = 1; $i < 5; $i++)
                             <option value="{{ $currentYear - $i }}">{{ $currentYear - $i }}</option>
                           @endfor
                         </select>

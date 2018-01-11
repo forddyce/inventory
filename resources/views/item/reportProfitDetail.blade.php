@@ -59,6 +59,7 @@ Laporan Item PERIODE {{ \Input::get('month') . '-' . \Input::get('year') }}
                   <th>KUANTITAS TERPAKAI</th>
                   <th>INVOICE PEMBELIAN</th>
                   <th>HARGA BELI PER UNIT</th>
+                  <th>DISKON</th>
                   <th>TOTAL</th>
                 </tr>
               </thead>
@@ -79,6 +80,14 @@ Laporan Item PERIODE {{ \Input::get('month') . '-' . \Input::get('year') }}
                     <tr>
                       <td>{{ $history->quantity_used }}</td>
                       @if ($purchaseHistory)
+                        <?php
+                          $realUnitPrice = $purchaseHistory->unit_price;
+                          if ($purchaseHistory->discount > 0) {
+                            $realUnitPrice = $realUnitPrice - ($purchaseHistory->discount / $purchaseHistory->quantity);
+                          }
+                          $total = $realUnitPrice * $history->quantity_used;
+                          $grandPurchase += $total;
+                        ?>
                         <td>
                           @if ($purchase = \DB::table('Purchase')->where('id', $purchaseHistory->purchase_id)->first())
                             <a href="{{ route('purchase.invoice.print', ['id' => $purchase->id]) }}" target="_blank">{{ $purchase->invoice_id }}</a>
@@ -88,10 +97,9 @@ Laporan Item PERIODE {{ \Input::get('month') . '-' . \Input::get('year') }}
                         </td>
                         <td>{{ number_format($purchaseHistory->unit_price, 0) }}</td>
                         <td>
-                          <?php 
-                            $total = $purchaseHistory->unit_price * $history->quantity_used;
-                            $grandPurchase += $total;
-                          ?>
+                          {{ number_format(($purchaseHistory->discount > 0) ? $realUnitPrice : 0, 0) }}
+                        </td>
+                        <td>
                           {{ number_format($total, 0) }}
                         </td>
                       @else
@@ -105,7 +113,7 @@ Laporan Item PERIODE {{ \Input::get('month') . '-' . \Input::get('year') }}
 
               <tfoot>
                 <tr>
-                  <td colspan="3" align="right">TOTAL</td>
+                  <td colspan="4" align="right">TOTAL</td>
                   <td><strong>{{ number_format($grandPurchase, 0) }}</strong></td>
                 </tr>
 
@@ -114,7 +122,7 @@ Laporan Item PERIODE {{ \Input::get('month') . '-' . \Input::get('year') }}
                   $grandTotal += $profit;
                 ?>
                 <tr @if ($profit > 0) class="green" @else class="red" @endif>
-                  <td colspan="3" align="right">
+                  <td colspan="4" align="right">
                     @if ($profit > 0) LABA @else RUGI @endif
                   </td>
                   <td><strong>{{ number_format(abs($profit) , 0) }}</strong></td>

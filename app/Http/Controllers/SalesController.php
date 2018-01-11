@@ -58,7 +58,7 @@ class SalesController extends Controller
         $user = \Sentinel::getUser();
         $data = \Input::get('data');
 
-        if (!isset($data['client_id'])) {
+        if ($data['client_id'] == '') {
             return \Response::json([
                 'type' => 'error',
                 'message' => 'Data klien tidak lengkap.'

@@ -58,7 +58,7 @@ class PurchaseController extends Controller
         $data = \Input::get('data');
         $user = \Sentinel::getUser();
 
-        if (!isset($data['invoice_id']) || !isset($data['supplier_id'])) {
+        if ($data['invoice_id'] == '' || $data['supplier_id'] == '') {
             return \Response::json([
                 'type' => 'error',
                 'message' => 'Data invoice / supplier tidak lengkap.'

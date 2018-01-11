@@ -33,28 +33,30 @@ Semua Piutang - {{ config('app.name') }}
               </div>
 
               <div class="block-options">
-                <a href="{{ route('purchase.add') }}" title="Buat Penjualan" class="btn-block-option">
+                <a href="{{ route('sales.new') }}" title="Buat Penjualan" class="btn-block-option">
                   <i class="si si-plus"></i> Penjualan
                 </a>
               </div>
             </div>
 
             <div class="block-content block-content-full">
-              <table class="table table-bordered table-striped table-vcenter js-dataTable-full table-grid" data-url="{{ route('receivable.list') }}">
-                <thead>
-                  <tr>
-                    <th data-id="created_at">Tanggal Dibuat</th>
-                    <th data-id="created_by">Dibuat Oleh</th>
-                    <th data-id="due_date">Jatuh Tempo</th>
-                    <th data-id="is_complete">Status</th>
-                    <th data-id="amount">Jumlah</th>
-                    <th data-id="amount_left">Sisa</th>
-                    <th data-id="client_name" data-sortable="false" data-searchable="false">Klien</th>
-                    <th data-id="action" data-sortable="false" data-searchable="false"></th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
+              <div class="table-responsive">
+                <table class="table table-bordered table-striped table-vcenter js-dataTable-full table-grid" data-url="{{ route('receivable.list') }}">
+                  <thead>
+                    <tr>
+                      <th data-id="created_at">Tanggal Dibuat</th>
+                      <th data-id="created_by">Dibuat Oleh</th>
+                      <th data-id="due_date">Jatuh Tempo</th>
+                      <th data-id="is_complete">Status</th>
+                      <th data-id="amount">Jumlah</th>
+                      <th data-id="amount_left">Sisa</th>
+                      <th data-id="client_name" data-sortable="false" data-searchable="false">Klien</th>
+                      <th data-id="action" data-sortable="false" data-searchable="false"></th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
